@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="robots" content="noindex, nofollow">
 <!-- iPadで拡大なしの等倍表示。viewport-fit=cover はホーム画面起動時の画面フチまで使う指定 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- ホーム画面に追加したときアプリのように全画面で開く（Safariのアドレスバーが消える） -->
@@ -206,26 +205,35 @@
     #pvBar #pvPrint{background:var(--blue); color:#fff; border-color:var(--blue);}
     #pvStage{position:relative; margin-top:16px;}
     #pvScale{position:absolute; top:0; left:0; transform-origin:top left; width:210mm;}
-    body.pv #printArea{display:block;}
-    body.pv #printArea .sheet{width:210mm; height:297mm; padding:10mm; box-sizing:border-box;
-                              background:#fff; box-shadow:0 8px 30px rgba(0,0,0,.45); margin:0 0 18px;}
+    /* プレビューは #printArea の中身を「複製」して表示する。
+       ⚠ 以前は #printArea 自体をここへ move していたが、その状態で
+       iPadの共有→プリントをすると印刷対象が body 直下から消えて白紙になる。複製なら起きない。 */
+    #pvScale .sheet{width:210mm; height:297mm; padding:10mm; box-sizing:border-box;
+                    background:#fff; box-shadow:0 8px 30px rgba(0,0,0,.45); margin:0 0 18px;}
   }
 
   /* ===== 印刷 ===== */
   #printArea{display:none;}
   @media print{
-    header, main, .printbar, #modal, #rmodal, #autoBkMsg, #homeTip{display:none !important;}
-    #printArea{display:block;}
-    body{background:#fff;}
+    /* ⚠ 消す要素を一つずつ書くと必ず書き漏れる（実害: #pvWrap のプレビュー用バーが
+       2ページ目に印字された）。「body直下は全部消す→印刷用の紙だけ出す」に変更。 */
+    body > *{display:none !important;}
+    /* プレビューを開いたまま「共有→プリント」されても、画面用のバー・紙の複製は出さない
+       （body.pv #pvWrap の display:block を確実に打ち消すため詳細度を上げて明示） */
+    body.pv > #pvWrap, body > #pvWrap{display:none !important;}
+    body > #printArea{display:block !important;}
+    html, body{margin:0 !important; padding:0 !important; background:#fff !important;}
     @page{size:A4 portrait; margin:10mm;}
-    .sheet{page-break-after:always;}
-    .sheet:last-child{page-break-after:auto;}
+    /* ⚠ 最後の紙に page-break-after:always が残ると末尾に白紙が1枚出る。
+       「2枚目以降の前で改ページ」に変えれば、最後に改ページ指示が残らない＝白紙が出ない。 */
+    .sheet + .sheet{page-break-before:always; break-before:page;}
+    .sheet{page-break-inside:avoid; break-inside:avoid;}
   }
 
   /* ===== 紙の再現（プレビューと印刷で共通） ===== */
   .sheet{color:#000; font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;}
   .sheet, .sheet *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
-  .sheet .ttl{font-size:15pt; font-weight:700; text-align:center; margin:0 0 4mm;}
+  .sheet .ttl{font-size:15pt; font-weight:700; text-align:center; margin:0 0 3mm;}
   .sheet .sub{display:flex; align-items:flex-end; gap:6mm; font-size:11pt; margin:0 0 3mm; padding:0 2mm;}
   .sheet .sub .nm{font-size:13pt; font-weight:700; border-bottom:0.4mm solid #000; min-width:60mm; padding:0 2mm 0.6mm;}
   .sheet .sub .dt{border-bottom:0.4mm solid #000; padding:0 2mm 0.6mm;}
@@ -238,15 +246,15 @@
   .sheet .tout{width:78mm;}
   .sheet .grp{height:8mm; font-size:11pt; font-weight:700;}
   .sheet .hd th{height:7mm; font-size:9.5pt; font-weight:700;}
-  .sheet tbody td{height:9.4mm;}
+  .sheet tbody td{height:8.9mm;}   /* 22行。A4縦に対して約28mmの余裕を残す（AirPrintの縮尺差で2枚目に落ちないように） */
   .sheet td.tm{font-variant-numeric:tabular-nums;}
   .sheet td.ct{font-size:10pt;}
   .sheet td.ml{font-variant-numeric:tabular-nums; font-size:10.5pt;}
   .sheet .sumrow th{height:10mm; font-size:10.5pt; font-weight:700; background:#f0f0f0;}
   .sheet .sumrow td{height:10mm; font-size:13pt; font-weight:700; text-align:right; padding-right:3mm; font-variant-numeric:tabular-nums;}
-  .sheet .diff{width:190mm; margin-top:4mm;}
-  .sheet .diff th{height:11mm; font-size:11pt; font-weight:700; background:#f0f0f0; width:108mm;}
-  .sheet .diff td{height:11mm; font-size:15pt; font-weight:700; text-align:right; padding-right:4mm; font-variant-numeric:tabular-nums;}
+  .sheet .diff{width:190mm; margin-top:3mm;}
+  .sheet .diff th{height:10mm; font-size:11pt; font-weight:700; background:#f0f0f0; width:108mm;}
+  .sheet .diff td{height:10mm; font-size:15pt; font-weight:700; text-align:right; padding-right:4mm; font-variant-numeric:tabular-nums;}
   .sheet .note{font-size:8pt; text-align:right; margin-top:2mm; color:#333;}
 </style>
 </head>
@@ -816,9 +824,8 @@ function openPreview(dsList){
   const r = buildPrint(dsList);
   document.querySelector("#pvBar .t").textContent =
     (r.days > 1) ? `印刷イメージ（A4 たて・${r.days}日分 ${r.pages}ページ）` : "印刷イメージ（A4 たて）";
-  const scale = document.getElementById("pvScale");
-  scale.innerHTML = "";
-  scale.appendChild(document.getElementById("printArea"));
+  // 画面用は複製。印刷される #printArea は body 直下に置いたまま動かさない。
+  document.getElementById("pvScale").innerHTML = document.getElementById("printArea").innerHTML;
   document.body.classList.add("pv"); pvOn = true;
   fitPreview();
 }
@@ -832,8 +839,7 @@ function fitPreview(){
   stage.style.height = (scale.offsetHeight * k + 40) + "px";
 }
 function closePreview(){
-  const pa = document.getElementById("printArea");
-  document.body.appendChild(pa);            // 印刷時に body 直下へ戻す
+  document.getElementById("pvScale").innerHTML = "";   // 画面用の複製だけ捨てる
   document.body.classList.remove("pv"); pvOn = false;
 }
 
@@ -1036,7 +1042,8 @@ document.getElementById("rGo").addEventListener("click", ()=>{
   openPreview(list);
 });
 document.getElementById("pvBack").addEventListener("click", closePreview);
-document.getElementById("pvPrint").addEventListener("click", ()=>{ closePreview(); window.print(); });
+// プレビューは開いたままでよい（#pvWrap は印刷時に body>* で消える）
+document.getElementById("pvPrint").addEventListener("click", ()=>window.print());
 window.addEventListener("resize", fitPreview);
 window.addEventListener("orientationchange", ()=>setTimeout(fitPreview, 300));
 document.addEventListener("keydown", e=>{
