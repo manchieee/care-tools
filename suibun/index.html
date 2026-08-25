@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="robots" content="noindex, nofollow">
 <!-- iPadで拡大なしの等倍表示。viewport-fit=cover はホーム画面起動時の画面フチまで使う指定 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- ホーム画面に追加したときアプリのように全画面で開く（Safariのアドレスバーが消える） -->
@@ -108,6 +107,25 @@
 
   .printbar{margin:14px 0 40px; display:flex; gap:10px; flex-wrap:wrap;}
   .printbar button{min-height:54px; padding:12px 20px; border:1px solid var(--blue); border-radius:12px; background:var(--blue); color:#fff; font-size:18px; font-weight:700;}
+  .printbar button.ghost{background:#fff; color:var(--blue);}
+
+  /* 期間まとめ印刷のパネル */
+  #rmodal{display:none; position:fixed; inset:0; z-index:200; background:rgba(15,25,35,.45);}
+  #rmodal.on{display:block;}
+  #rbox{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+        width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 40px); overflow:auto;
+        background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  #rbox .hd{position:sticky; top:0; padding:12px 16px; font-size:19px; font-weight:700; color:#fff; background:var(--blue);}
+  #rbox .bd{padding:14px 16px 4px;}
+  #rbox input[type=date]{min-height:50px; padding:8px 12px; border:1px solid var(--line); border-radius:10px;
+                         background:#fff; font-size:18px; font-weight:700;}
+  #rCount{display:block; background:#f4f7fa; border:1px solid var(--line); border-radius:12px;
+          padding:12px 14px; font-size:19px; margin-bottom:14px; line-height:1.6;}
+  #rbox .ft{position:sticky; bottom:0; background:#fff; border-top:1px solid var(--line);
+            padding:12px 16px calc(12px + env(safe-area-inset-bottom)); display:flex; gap:10px;}
+  #rbox .ft button{min-height:56px; flex:1; border-radius:12px; font-size:18px; font-weight:700; border:1px solid var(--line); background:#fff;}
+  #rbox .ft #rGo{flex:2; background:var(--blue); border-color:var(--blue); color:#fff;}
+  #rbox .ft #rGo:disabled{background:#c7d2dd; border-color:#c7d2dd;}
   .hint{font-size:14px; color:var(--sub); line-height:1.7;}
 
   /* ===== 設定タブ ===== */
@@ -195,7 +213,7 @@
   /* ===== 印刷 ===== */
   #printArea{display:none;}
   @media print{
-    header, main, .printbar, #modal, #autoBkMsg, #homeTip{display:none !important;}
+    header, main, .printbar, #modal, #rmodal, #autoBkMsg, #homeTip{display:none !important;}
     #printArea{display:block;}
     body{background:#fff;}
     @page{size:A4 portrait; margin:10mm;}
@@ -283,7 +301,8 @@
     </div>
 
     <div class="printbar">
-      <button id="btnPreview">🖨 印刷（紙の形で出す）</button>
+      <button id="btnPreview">🖨 この日だけ印刷</button>
+      <button id="btnRange" class="ghost">🗓 期間をまとめて印刷</button>
     </div>
     <p class="hint">記録をタップすると直せます（削除もそこから）。<br>
       印刷は［印刷］→出てきた紙の絵を確認→右上の［プリント］。iPadなら共有ボタンからAirPrintでも出せます。</p>
@@ -375,6 +394,40 @@
       <button id="mCancel">やめる</button>
       <button id="mDel">削除</button>
       <button id="mSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 期間をまとめて印刷 ========== -->
+<div id="rmodal">
+  <div id="rbox">
+    <div class="hd">🗓 期間をまとめて印刷</div>
+    <div class="bd">
+      <div class="fld">
+        <span class="lbl">だれの</span>
+        <div style="font-size:19px; font-weight:700;" id="rWho">—</div>
+      </div>
+      <div class="fld">
+        <span class="lbl">よく使う期間</span>
+        <div class="chips">
+          <button type="button" id="rThis">今月</button>
+          <button type="button" id="rLast">先月</button>
+          <button type="button" id="r7">過去7日</button>
+        </div>
+      </div>
+      <div class="fld">
+        <span class="lbl">開始日 〜 終了日</span>
+        <div class="row">
+          <input type="date" id="rFrom">
+          <span style="font-weight:700;">〜</span>
+          <input type="date" id="rTo">
+        </div>
+      </div>
+      <span id="rCount">—</span>
+    </div>
+    <div class="ft">
+      <button id="rCancel">やめる</button>
+      <button id="rGo">印刷イメージを見る</button>
     </div>
   </div>
 </div>
@@ -637,8 +690,9 @@ function jpDate(ds){
   const w = "日月火水木金土"[d.getDay()];
   return {y:p[0], m:p[1], d:p[2], w:w};
 }
-function buildPrint(){
-  const uidStr = curUserId(), ds = curDate();
+/* 1日ぶんの紙（22行で足りなければ複数ページ）を作る。
+   1日版でも期間まとめ版でも、ここが作る紙は完全に同じ形。 */
+function sheetsForDay(ds, uidStr){
   const nm = uidStr ? withSama(userName(uidStr)) : "";
   const r = uidStr ? dayRec(ds, uidStr) : {in:[], out:[]};
   const ins = sortByTime(r.in), outs = sortByTime(r.out);
@@ -691,14 +745,76 @@ function buildPrint(){
       ${pages>1 ? `<div class="note">${p+1} / ${pages} ページ</div>` : ``}
     </div>`;
   }
+  return {html:html, pages:pages};
+}
+
+/* 日付の配列を受け取って、1日1枚（多ければ複数枚）を続けて並べる。
+   .sheet に page-break-after:always が付いているので、そのまま連続印刷になる。 */
+function buildPrint(dsList){
+  const uidStr = curUserId();
+  const list = (dsList && dsList.length) ? dsList : [curDate()];
+  let html = "", pages = 0;
+  list.forEach(ds=>{ const s = sheetsForDay(ds, uidStr); html += s.html; pages += s.pages; });
   document.getElementById("printArea").innerHTML = html;
+  return {days:list.length, pages:pages};
+}
+
+/* ===== 期間まとめ印刷 ===== */
+function hasRecords(ds, uidStr){
+  const d = recs[ds]; if(!d) return false;
+  const r = d[uidStr]; if(!r) return false;
+  return (Array.isArray(r.in) && r.in.length > 0) || (Array.isArray(r.out) && r.out.length > 0);
+}
+/* 期間の中で「記録がある日」だけを古い順に返す（記録なしの日は紙を出さない） */
+function daysWithRecords(from, to, uidStr){
+  if(!uidStr || !from || !to) return [];
+  if(from > to){ const t = from; from = to; to = t; }
+  return Object.keys(recs).filter(ds => ds >= from && ds <= to && hasRecords(ds, uidStr)).sort();
+}
+function rangePages(list, uidStr){
+  return list.reduce((a, ds)=>{
+    const r = dayRec(ds, uidStr);
+    return a + Math.max(1, Math.ceil(Math.max(r.in.length, r.out.length) / ROWS_PER_SHEET));
+  }, 0);
+}
+function monthRange(offset){          // 0=今月・1=先月
+  const n = new Date();
+  const first = new Date(n.getFullYear(), n.getMonth()-offset, 1);
+  const last  = new Date(n.getFullYear(), n.getMonth()-offset+1, 0);
+  const fmt = d => d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+  return {from:fmt(first), to:fmt(offset===0 ? (last < n ? last : n) : last)};   // 今月は今日まで
+}
+function openRange(){
+  if(!curUserId()){ alert("先に「設定」タブで利用者を登録してください。"); return; }
+  const m = monthRange(0);
+  document.getElementById("rFrom").value = m.from;
+  document.getElementById("rTo").value   = m.to;
+  document.getElementById("rWho").textContent = withSama(userName(curUserId()));
+  updateRangeCount();
+  document.getElementById("rmodal").classList.add("on");
+}
+function closeRange(){ document.getElementById("rmodal").classList.remove("on"); }
+function updateRangeCount(){
+  const uidStr = curUserId();
+  const list = daysWithRecords(document.getElementById("rFrom").value, document.getElementById("rTo").value, uidStr);
+  const el = document.getElementById("rCount");
+  if(!list.length){
+    el.innerHTML = `<b style="color:var(--red);">この期間に記録のある日はありません</b>`;
+  }else{
+    el.innerHTML = `<b>${list.length}日分・${rangePages(list, uidStr)}ページ</b>`
+                 + `<span style="font-size:14px; color:var(--sub);">（${list[0]} 〜 ${list[list.length-1]}／記録のない日は印刷しません）</span>`;
+  }
+  document.getElementById("rGo").disabled = !list.length;
+  return list;
 }
 
 /* プレビュー（印刷と同じCSSを画面で縮小表示） */
 let pvOn = false;
-function openPreview(){
+function openPreview(dsList){
   if(!curUserId()){ alert("先に「設定」タブで利用者を登録してください。"); return; }
-  buildPrint();
+  const r = buildPrint(dsList);
+  document.querySelector("#pvBar .t").textContent =
+    (r.days > 1) ? `印刷イメージ（A4 たて・${r.days}日分 ${r.pages}ページ）` : "印刷イメージ（A4 たて）";
   const scale = document.getElementById("pvScale");
   scale.innerHTML = "";
   scale.appendChild(document.getElementById("printArea"));
@@ -894,13 +1010,36 @@ document.getElementById("importFile").addEventListener("change", e=>{
   e.target.value = "";
 });
 
-document.getElementById("btnPreview").addEventListener("click", openPreview);
+document.getElementById("btnPreview").addEventListener("click", ()=>openPreview([curDate()]));
+document.getElementById("btnRange").addEventListener("click", openRange);
+document.getElementById("rCancel").addEventListener("click", closeRange);
+document.getElementById("rmodal").addEventListener("click", e=>{ if(e.target.id==="rmodal") closeRange(); });
+document.getElementById("rFrom").addEventListener("change", updateRangeCount);
+document.getElementById("rTo").addEventListener("change", updateRangeCount);
+document.getElementById("rThis").addEventListener("click", ()=>{
+  const m = monthRange(0);
+  document.getElementById("rFrom").value = m.from; document.getElementById("rTo").value = m.to; updateRangeCount();
+});
+document.getElementById("rLast").addEventListener("click", ()=>{
+  const m = monthRange(1);
+  document.getElementById("rFrom").value = m.from; document.getElementById("rTo").value = m.to; updateRangeCount();
+});
+document.getElementById("r7").addEventListener("click", ()=>{
+  document.getElementById("rFrom").value = shiftDate(todayStr(), -6);
+  document.getElementById("rTo").value = todayStr(); updateRangeCount();
+});
+document.getElementById("rGo").addEventListener("click", ()=>{
+  const list = updateRangeCount();
+  if(!list.length) return;
+  closeRange();
+  openPreview(list);
+});
 document.getElementById("pvBack").addEventListener("click", closePreview);
 document.getElementById("pvPrint").addEventListener("click", ()=>{ closePreview(); window.print(); });
 window.addEventListener("resize", fitPreview);
 window.addEventListener("orientationchange", ()=>setTimeout(fitPreview, 300));
 document.addEventListener("keydown", e=>{
-  if(e.key === "Escape"){ if(pvOn) closePreview(); else closeModal(); }
+  if(e.key === "Escape"){ if(pvOn) closePreview(); else { closeModal(); closeRange(); } }
 });
 
 /* ===== ホーム画面から開いているかの判定 =====
