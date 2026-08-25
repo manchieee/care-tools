@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<!-- iPadで拡大なしの等倍表示。viewport-fit=cover はホーム画面起動時の画面フチまで使う指定 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- ホーム画面に追加したときアプリのように全画面で開く（Safariのアドレスバーが消える） -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="水分出納">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#2e6fb7">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAACcElEQVR42u3cwRGEQAwDQSIitQuP8OB1Kbi8UqtqElj3F67797xSSpdHENAS0BLQEtACWgJaAloCWgJaQEtAS0BLQEtAC2gJaAloCWgJaAEtAS0BLQEtAS2gJaAloCWgJaBH+89bAA20gAYaaAENtIAGuhQz1EADLaCBBtpDDGGGGmigBTTQQGsIM9RAAy2ggQZaQ5ihBhpoAQ000BrCDDXQQAvozZihBhpoAQ000BrCDDXQQAvozZihBhpoAQ000BrCDDXQQAvozZihBhpoAb0ZM9RAAy2gN2OGGmigBfRmzFADDbSABhpomKEGGmiggYYZaqCBBlqrMUMNNNBAazNmqIEGGmhtxgw10HGYoQYaaKBhPmFuBXQEZLCBjsUMNdBxmKEGOgoy2EC/6QMaZqiBhhlqoGGGGmiYoQYaaKBhhhpomKEGGmaogQYa6E7Q1okaaKCBhhlqoIEGGmiYoQbagIYZaqCBBhpooIEGGmaogTaggQYaaKCBBhpmqIEGGmigDWiggQYaaKCBBhpooIEGGmgDGmiggQYaaKCBBhpooIEG2oAGGmiggQYaaKCBBhpooH2xYomYgTaggQYaaKCBBhpqmIE2oP1OF2aggQYaaKCBBhpqmIE2oKGGGWiggQYaapiBhhpmoIEGGmqYgYYaZqChhhloqGEGuhV1420rQTegbr1rLehk1M03rQadiLr9nvWgk1C7JdARsN0O6BjUbgZ0BGw3AjoCtpsAHQHbDYA+Hre3Bvpo4N4S6COhexugJaAFtAS0BLQEtAS0gJaAloCWgJaAFtAS0BLQEtAS0AJaAloCWgJaAlpAS+v7AGNICk387FmaAAAAAElFTkSuQmCC">
+<title>水分出納（IN：OUT）表</title>
+<style>
+  :root{
+    --ink:#1a2b3c; --sub:#5b6b7c; --line:#d7dde4; --bg:#eef2f6; --card:#fff;
+    --blue:#2e6fb7; --blue-soft:#eaf3fb;
+    --amber:#c8761b; --amber-soft:#fdf3e8;
+    --red:#b03030; --ok:#1f7a4d;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:rgba(46,111,183,.15);}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+    font-size:17px;                      /* iOSは16px未満のinputで勝手に拡大する→17pxで固定 */
+    -webkit-text-size-adjust:100%;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  button, select, input{font-family:inherit; font-size:17px; color:var(--ink);}
+  button{cursor:pointer;}
+
+  /* ===== ヘッダー ===== */
+  header{
+    position:sticky; top:0; z-index:60; background:var(--blue); color:#fff;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 0;
+    display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap;
+  }
+  header .app{font-size:19px; font-weight:700; padding-bottom:10px; margin-right:auto; letter-spacing:.5px;}
+  .tabs{display:flex; gap:6px;}
+  .tabs button{
+    min-height:44px; padding:10px 22px; border:none; border-radius:10px 10px 0 0;
+    background:rgba(255,255,255,.22); color:#fff; font-size:17px; font-weight:700;
+  }
+  .tabs button.on{background:var(--bg); color:var(--blue);}
+
+  main{padding:14px; max-width:1180px; margin:0 auto;}
+  section[hidden]{display:none;}
+
+  /* ===== 上部の選択（利用者・日付） ===== */
+  .pick{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .pick label{display:flex; align-items:center; gap:8px; font-weight:700; color:var(--sub); font-size:15px;}
+  .pick select, .pick input[type=date]{
+    min-height:48px; padding:8px 12px; border:1px solid var(--line); border-radius:10px;
+    background:#fff; font-size:18px; font-weight:700; color:var(--ink);
+  }
+  .pick select{max-width:46vw;}
+  .daynav{display:flex; gap:6px; margin-left:auto;}
+  .daynav button{min-height:48px; min-width:56px; padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; font-weight:700;}
+
+  /* ===== 合計 ===== */
+  .totals{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
+  .tot{
+    flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:10px 14px; text-align:center;
+  }
+  .tot .cap{font-size:14px; font-weight:700; color:var(--sub); display:block;}
+  .tot b{font-size:34px; line-height:1.15; display:inline-block; font-variant-numeric:tabular-nums;}
+  .tot .unit{font-size:15px; color:var(--sub); margin-left:3px;}
+  .tot.in{background:var(--blue-soft); border-color:#bfd9f0;}
+  .tot.in b{color:var(--blue);}
+  .tot.out{background:var(--amber-soft); border-color:#f0d8b8;}
+  .tot.out b{color:var(--amber);}
+  .tot.diff{background:#f4f7fa;}
+  .tot.diff b.minus{color:var(--red);}
+  .tot.diff b.plus{color:var(--ok);}
+
+  /* ===== IN / OUT の2列 ===== */
+  .cols{display:flex; gap:12px; margin-top:12px; align-items:flex-start; flex-wrap:wrap;}
+  .col{flex:1 1 320px; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .col h2{margin:0; padding:10px 14px; font-size:17px; color:#fff;}
+  .col.in h2{background:var(--blue);}
+  .col.out h2{background:var(--amber);}
+  .col .add{
+    display:block; width:calc(100% - 24px); margin:12px; min-height:58px;
+    border:2px dashed; border-radius:12px; background:#fff; font-size:19px; font-weight:700;
+  }
+  .col.in .add{border-color:#9cc3e6; color:var(--blue);}
+  .col.out .add{border-color:#e7c294; color:var(--amber);}
+  ul.recs{list-style:none; margin:0; padding:0 12px 12px;}
+  ul.recs li{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    min-height:56px; padding:8px 12px; margin-bottom:8px;
+    border:1px solid var(--line); border-radius:12px; background:#fff;
+  }
+  ul.recs li .t{font-weight:700; font-size:18px; min-width:62px; font-variant-numeric:tabular-nums;}
+  ul.recs li .nm{flex:1; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  ul.recs li .ml{font-weight:700; font-size:19px; font-variant-numeric:tabular-nums;}
+  ul.recs li .by{font-size:13px; color:var(--sub); min-width:60px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  ul.recs li.tap{cursor:pointer;}
+  ul.recs .empty{color:var(--sub); font-size:15px; padding:4px 2px 10px; border:none; background:none; min-height:0; display:block;}
+
+  .printbar{margin:14px 0 40px; display:flex; gap:10px; flex-wrap:wrap;}
+  .printbar button{min-height:54px; padding:12px 20px; border:1px solid var(--blue); border-radius:12px; background:var(--blue); color:#fff; font-size:18px; font-weight:700;}
+  .hint{font-size:14px; color:var(--sub); line-height:1.7;}
+
+  /* ===== 設定タブ ===== */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px;}
+  .card h3{margin:0 0 4px; font-size:18px;}
+  .rosterrow{display:flex; gap:8px; margin:10px 0;}
+  .rosterrow input{flex:1; min-height:50px; padding:8px 12px; border:1px solid var(--line); border-radius:10px;}
+  .rosterrow button{min-height:50px; padding:8px 18px; border:1px solid var(--blue); border-radius:10px; background:var(--blue); color:#fff; font-weight:700;}
+  ul.roster{list-style:none; margin:0; padding:0;}
+  ul.roster li{display:flex; align-items:center; gap:10px; min-height:52px; padding:6px 4px; border-bottom:1px solid var(--line); font-size:17px;}
+  ul.roster li .nm{flex:1;}
+  ul.roster li button{min-width:52px; min-height:44px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--red); font-size:15px;}
+  .bkbtns{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
+  .bkbtns button{min-height:52px; padding:10px 18px; border:1px solid var(--line); border-radius:10px; background:#fff; font-weight:700;}
+
+  /* ホーム画面から開いてね、の案内バー（Safariで直接開いている時だけ出る） */
+  #homeTip{display:none; background:#fff6e5; border-bottom:2px solid #e6b366; color:#6b4a10;
+           padding:12px 14px; font-size:15px; line-height:1.7;}
+  #homeTip.on{display:flex; gap:10px; align-items:flex-start;}
+  #homeTip .txt{flex:1;}
+  #homeTip b{color:#8a4b00;}
+  #homeTip button{min-height:44px; padding:8px 14px; border:1px solid #e0c493; border-radius:10px; background:#fff; font-size:15px;}
+
+  /* 週1回の自動バックアップのお知らせ */
+  #autoBkMsg{display:none; position:fixed; top:calc(12px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:500;
+             background:#1f3b57; color:#fff; padding:10px 16px; border-radius:10px; font-size:15px; box-shadow:0 6px 20px rgba(0,0,0,.3);}
+  #autoBkMsg.on{display:block;}
+
+  /* ===== 入力パネル（モーダル） ===== */
+  #modal{display:none; position:fixed; inset:0; z-index:200; background:rgba(15,25,35,.45);}
+  #modal.on{display:block;}
+  #mbox{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 40px); overflow:auto;
+    background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.35);
+  }
+  #mhead{position:sticky; top:0; padding:12px 16px; font-size:19px; font-weight:700; color:#fff; background:var(--blue);}
+  #mbox.out #mhead{background:var(--amber);}
+  #mbody{padding:14px 16px 4px;}
+  .fld{margin-bottom:14px;}
+  .fld > .lbl{font-size:15px; font-weight:700; color:var(--sub); display:block; margin-bottom:6px;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chips button{
+    min-height:50px; min-width:76px; padding:8px 14px; font-size:17px; font-weight:700;
+    border:1px solid var(--line); border-radius:12px; background:#fff;
+  }
+  .chips button.on{background:var(--blue); border-color:var(--blue); color:#fff;}
+  #mbox.out .chips button.on{background:var(--amber); border-color:var(--amber);}
+  .fld input[type=time], .fld input[type=text], .fld input[type=number]{
+    min-height:50px; padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; font-size:18px;
+  }
+  .fld input[type=time]{font-weight:700; font-variant-numeric:tabular-nums;}
+  .fld input[type=number]{width:130px; font-weight:700;}
+  .fld input[type=text].other{width:100%; margin-top:8px;}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .row .now{min-height:50px; padding:8px 14px; border:1px solid var(--line); border-radius:10px; background:#fff; font-weight:700;}
+  #mfoot{position:sticky; bottom:0; background:#fff; border-top:1px solid var(--line); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); display:flex; gap:10px;}
+  #mfoot button{min-height:56px; flex:1; border-radius:12px; font-size:18px; font-weight:700; border:1px solid var(--line); background:#fff;}
+  /* ⚠ #mfoot button より詳細度を高くしないと背景色が負ける（実測） */
+  #mfoot #mSave{background:var(--blue); border-color:var(--blue); color:#fff; flex:2;}
+  #mbox.out #mfoot #mSave{background:var(--amber); border-color:var(--amber);}
+  #mfoot #mDel{color:var(--red); flex:0 0 92px;}
+  #mErr{color:var(--red); font-size:15px; font-weight:700; margin:0 0 10px; display:none;}
+  #mErr.on{display:block;}
+
+  /* ===== 印刷イメージの確認（プレビュー）=====
+     印刷用のスタイル（.sheet 以下）は media query の外に置き、プレビューでも
+     印刷でも同じものを使う。だから見た目がズレない。 */
+  #pvWrap{display:none;}
+  @media screen{
+    body.pv{overflow:hidden;}
+    body.pv #pvWrap{display:block !important; position:fixed; inset:0; z-index:300; background:#5d6773; overflow:auto;}
+    #pvBar{position:sticky; top:0; z-index:2; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+           background:#eef1f4; border-bottom:1px solid #c3ccd5; padding:calc(10px + env(safe-area-inset-top)) 14px 10px;}
+    #pvBar .t{font-size:16px; font-weight:700; margin-right:auto;}
+    #pvBar button{min-height:50px; font-size:17px; font-weight:700; padding:10px 18px; border:1px solid #d7dde4; border-radius:10px; background:#fff;}
+    #pvBar #pvPrint{background:var(--blue); color:#fff; border-color:var(--blue);}
+    #pvStage{position:relative; margin-top:16px;}
+    #pvScale{position:absolute; top:0; left:0; transform-origin:top left; width:210mm;}
+    body.pv #printArea{display:block;}
+    body.pv #printArea .sheet{width:210mm; height:297mm; padding:10mm; box-sizing:border-box;
+                              background:#fff; box-shadow:0 8px 30px rgba(0,0,0,.45); margin:0 0 18px;}
+  }
+
+  /* ===== 印刷 ===== */
+  #printArea{display:none;}
+  @media print{
+    header, main, .printbar, #modal, #autoBkMsg, #homeTip{display:none !important;}
+    #printArea{display:block;}
+    body{background:#fff;}
+    @page{size:A4 portrait; margin:10mm;}
+    .sheet{page-break-after:always;}
+    .sheet:last-child{page-break-after:auto;}
+  }
+
+  /* ===== 紙の再現（プレビューと印刷で共通） ===== */
+  .sheet{color:#000; font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;}
+  .sheet, .sheet *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .sheet .ttl{font-size:15pt; font-weight:700; text-align:center; margin:0 0 4mm;}
+  .sheet .sub{display:flex; align-items:flex-end; gap:6mm; font-size:11pt; margin:0 0 3mm; padding:0 2mm;}
+  .sheet .sub .nm{font-size:13pt; font-weight:700; border-bottom:0.4mm solid #000; min-width:60mm; padding:0 2mm 0.6mm;}
+  .sheet .sub .dt{border-bottom:0.4mm solid #000; padding:0 2mm 0.6mm;}
+  .sheet .sub .rng{font-size:10pt; margin-left:auto; padding-bottom:0.6mm;}
+  .sheet .pg{position:absolute; right:0; bottom:0; font-size:9pt;}
+  .sheet .tables{display:flex; gap:4mm; align-items:flex-start;}
+  .sheet table{border-collapse:collapse; table-layout:fixed;}
+  .sheet th, .sheet td{border:0.35mm solid #000; font-size:9.5pt; text-align:center; padding:0; white-space:nowrap; overflow:hidden;}
+  .sheet .tin{width:108mm;}
+  .sheet .tout{width:78mm;}
+  .sheet .grp{height:8mm; font-size:11pt; font-weight:700;}
+  .sheet .hd th{height:7mm; font-size:9.5pt; font-weight:700;}
+  .sheet tbody td{height:9.4mm;}
+  .sheet td.tm{font-variant-numeric:tabular-nums;}
+  .sheet td.ct{font-size:10pt;}
+  .sheet td.ml{font-variant-numeric:tabular-nums; font-size:10.5pt;}
+  .sheet .sumrow th{height:10mm; font-size:10.5pt; font-weight:700; background:#f0f0f0;}
+  .sheet .sumrow td{height:10mm; font-size:13pt; font-weight:700; text-align:right; padding-right:3mm; font-variant-numeric:tabular-nums;}
+  .sheet .diff{width:190mm; margin-top:4mm;}
+  .sheet .diff th{height:11mm; font-size:11pt; font-weight:700; background:#f0f0f0; width:108mm;}
+  .sheet .diff td{height:11mm; font-size:15pt; font-weight:700; text-align:right; padding-right:4mm; font-variant-numeric:tabular-nums;}
+  .sheet .note{font-size:8pt; text-align:right; margin-top:2mm; color:#333;}
+</style>
+</head>
+<body>
+
+<div id="autoBkMsg"></div>
+
+<header>
+  <div class="app">💧 水分出納表</div>
+  <div class="tabs">
+    <button id="tabBtnRec" class="on">記録</button>
+    <button id="tabBtnSet">設定</button>
+  </div>
+</header>
+
+<div id="homeTip">
+  <span class="txt"><b>⚠️ ホーム画面に追加して、そのアイコンから使ってください。</b><br>
+    画面下（または右上）の共有ボタン <b>⬆️</b> →「ホーム画面に追加」→「追加」。<br>
+    Safariで直接開くと記録が別扱いになり、しばらく使わないと消えることがあります。</span>
+  <button id="homeTipClose">閉じる</button>
+</div>
+
+<main>
+  <!-- ========== 記録タブ ========== -->
+  <section id="tabRec">
+    <div class="pick">
+      <label>利用者 <select id="selUser"></select></label>
+      <label>日付 <input type="date" id="theDate"></label>
+      <div class="daynav">
+        <button id="btnPrev">◀ 前日</button>
+        <button id="btnToday">今日</button>
+        <button id="btnNext">翌日 ▶</button>
+      </div>
+    </div>
+
+    <div class="totals">
+      <div class="tot in"><span class="cap">① 当日の摂取 IN</span><b id="totIn">0</b><span class="unit">ml</span></div>
+      <div class="tot out"><span class="cap">② 当日の排出 OUT</span><b id="totOut">0</b><span class="unit">ml</span></div>
+      <div class="tot diff"><span class="cap">①−② 差引</span><b id="totDiff">0</b><span class="unit">ml</span></div>
+    </div>
+
+    <div class="cols">
+      <div class="col in">
+        <h2>IN（摂取量）</h2>
+        <button class="add" id="addIn">＋ 飲んだ を記録</button>
+        <ul class="recs" id="listIn"></ul>
+      </div>
+      <div class="col out">
+        <h2>OUT（排出量）</h2>
+        <button class="add" id="addOut">＋ 出た を記録</button>
+        <ul class="recs" id="listOut"></ul>
+      </div>
+    </div>
+
+    <div class="printbar">
+      <button id="btnPreview">🖨 印刷（紙の形で出す）</button>
+    </div>
+    <p class="hint">記録をタップすると直せます（削除もそこから）。<br>
+      印刷は［印刷］→出てきた紙の絵を確認→右上の［プリント］。iPadなら共有ボタンからAirPrintでも出せます。</p>
+  </section>
+
+  <!-- ========== 設定タブ ========== -->
+  <section id="tabSet" hidden>
+    <div class="card" style="background:#fff6e5; border-color:#e6b366;">
+      <h3>使い方（最初に1回だけ）</h3>
+      <p class="hint" style="color:#6b4a10;">
+        <b>必ずホーム画面に追加して、そのアイコンから使ってください。</b><br>
+        追加のしかた：画面の共有ボタン <b>⬆️</b> →「ホーム画面に追加」→「追加」。<br>
+        Safariのタブで直接開いた場合、記録はホーム画面のアイコンから開いた時とは<b>別の場所</b>に保存され、
+        7日ほど使わないとiPad側で消されることがあります（ホーム画面アイコンから使えば消えません）。<br>
+        今どちらで開いているか：<b id="swMode">確認中…</b>
+      </p>
+    </div>
+    <div class="card">
+      <h3>利用者の名簿</h3>
+      <p class="hint">水分の記録をつける人を登録します。「様」は自動でつくので名前だけ入れてください。</p>
+      <div class="rosterrow">
+        <input type="text" id="newUser" placeholder="例）山田 花子" autocomplete="off">
+        <button id="btnAddUser">追加</button>
+      </div>
+      <ul class="roster" id="rosterUsers"></ul>
+    </div>
+
+    <div class="card">
+      <h3>職員の名簿（担当者）</h3>
+      <p class="hint">記録するときの担当者ボタンに出ます。</p>
+      <div class="rosterrow">
+        <input type="text" id="newStaff" placeholder="例）加藤" autocomplete="off">
+        <button id="btnAddStaff">追加</button>
+      </div>
+      <ul class="roster" id="rosterStaff"></ul>
+    </div>
+
+    <div class="card">
+      <h3>バックアップ</h3>
+      <p class="hint">記録はこのiPadの中だけに保存されます（1年ぶん・古いものから自動で消えます）。iPadを替える時・念のための保険用に、
+        ファイルへ書き出せます。開いた時に前回から7日たっていたら自動で1本落ちます。<br>
+        いま使っている量：<b id="useBar">—</b><br>
+        <span style="font-size:13px;">※ 80％を超えたら、書き出して管理者に相談してください（利用者が5人以上・毎日たくさん記録すると1年で上限に近づきます）。</span></p>
+      <div class="bkbtns">
+        <button id="btnExport">💾 全部をファイルに書き出す</button>
+        <button id="btnImportPick">📂 ファイルから読み込む</button>
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ========== 入力パネル ========== -->
+<div id="modal">
+  <div id="mbox">
+    <div id="mhead">記録</div>
+    <div id="mbody">
+      <p id="mErr"></p>
+
+      <div class="fld">
+        <span class="lbl">時刻</span>
+        <div class="row">
+          <input type="time" id="mTime">
+          <button class="now" id="mNow">今の時刻</button>
+        </div>
+      </div>
+
+      <div class="fld" id="fldWhat">
+        <span class="lbl">内容</span>
+        <div class="chips" id="mWhat"></div>
+        <input type="text" id="mWhatOther" class="other" placeholder="内容を入力（例）ゼリー" style="display:none" autocomplete="off">
+      </div>
+
+      <div class="fld">
+        <span class="lbl">量（ml）</span>
+        <div class="chips" id="mAmt"></div>
+        <div class="row" style="margin-top:8px;">
+          <input type="number" id="mAmtOther" inputmode="numeric" min="0" max="9999" step="10" placeholder="自由入力">
+          <span style="font-size:15px; color:var(--sub);">ml</span>
+        </div>
+      </div>
+
+      <div class="fld">
+        <span class="lbl">担当者</span>
+        <div class="chips" id="mBy"></div>
+      </div>
+    </div>
+    <div id="mfoot">
+      <button id="mCancel">やめる</button>
+      <button id="mDel">削除</button>
+      <button id="mSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 印刷プレビュー ========== -->
+<div id="pvWrap">
+  <div id="pvBar">
+    <span class="t">印刷イメージ（A4 たて）</span>
+    <button id="pvBack">← 戻る</button>
+    <button id="pvPrint">🖨 プリント</button>
+  </div>
+  <div id="pvStage"><div id="pvScale"></div></div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+"use strict";
+
+/* ===== 保存のきまり =====
+   キーはこの4つだけ。増やしたら BK_KEYS にも足すこと。 */
+const K_USERS = "sw_users_v1";   // 利用者名簿 [{id,name}]
+const K_STAFF = "sw_staff_v1";   // 職員名簿   [{id,name}]
+const K_RECS  = "sw_recs_v1";    // 記録 { "YYYY-MM-DD": { userId: { in:[], out:[] } } }
+const KEEP_DAYS = 365;           // これより古い日付は自動で捨てる（1年）
+
+const WHAT_PRESETS = ["お茶","水","紅茶","コーヒー","ジュース","牛乳","みそ汁"];
+const IN_AMTS  = [50,100,150,200,250];
+const OUT_AMTS = [100,200,300,500];
+
+let users = [], staff = [], recs = {};
+
+/* ===== 小道具 ===== */
+function pad2(n){ return String(n).padStart(2,"0"); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function nowTime(){ const d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
+function shiftDate(ds, n){ const p=ds.split("-").map(Number); const d=new Date(p[0],p[1]-1,p[2]); d.setDate(d.getDate()+n);
+  return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function uid(p){ return p+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function comma(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+function withSama(name){ const s=String(name||"").trim(); return s ? (/様\s*$/.test(s) ? s : s+" 様") : ""; }
+
+/* ===== 読み書き ===== */
+function loadArr(key){
+  try{ const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : []; }catch(e){ return []; }
+}
+function loadRecs(){
+  try{ const v = JSON.parse(localStorage.getItem(K_RECS)); return (v && typeof v === "object" && !Array.isArray(v)) ? v : {}; }
+  catch(e){ return {}; }
+}
+function saveUsers(){ localStorage.setItem(K_USERS, JSON.stringify(users)); }
+function saveStaff(){ localStorage.setItem(K_STAFF, JSON.stringify(staff)); }
+let quotaWarned = false;
+function saveRecs(){
+  // 1年より前の記録は自動で捨てる（保存領域を太らせない）
+  const keys = Object.keys(recs).sort();
+  while(keys.length > KEEP_DAYS){ delete recs[keys.shift()]; }
+  try{
+    localStorage.setItem(K_RECS, JSON.stringify(recs));
+  }catch(e){
+    // iPadの保存領域（1つのサイトにつき約5MB）がいっぱいになった時。
+    // 画面の記録は消さない＝この場は続けられる。管理者にバックアップを促す。
+    if(!quotaWarned){
+      quotaWarned = true;
+      alert("⚠️ 保存できませんでした。\niPadの保存できる量がいっぱいです。\n\n"
+          + "「設定」タブの［全部をファイルに書き出す］でバックアップを取って、\n管理者に連絡してください。");
+    }
+    return;
+  }
+  updateUsage();
+}
+/* 保存領域の使用ぐあい（目安5MB／iPadのSafariの1サイトあたりの上限） */
+function updateUsage(){
+  const el = document.getElementById("useBar");
+  if(!el) return;
+  let chars = 0;
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k.indexOf("sw_") !== 0) continue;
+    chars += k.length + (localStorage.getItem(k)||"").length;
+  }
+  const kb = chars*2/1024;                      // 1文字=2バイトで見積もる（多めに見る側）
+  const pct = Math.min(100, Math.round(kb/5120*1000)/10);
+  el.textContent = "約 " + (kb<1024 ? Math.round(kb)+" KB" : (kb/1024).toFixed(1)+" MB") + "（上限の目安5MBのうち " + pct + "％）";
+  el.style.color = pct >= 80 ? "#b03030" : "";
+}
+function dayRec(ds, uidStr){
+  const d = recs[ds] || (recs[ds] = {});
+  const r = d[uidStr] || (d[uidStr] = {in:[], out:[]});
+  if(!Array.isArray(r.in)) r.in = [];
+  if(!Array.isArray(r.out)) r.out = [];
+  return r;
+}
+function sortByTime(list){ return list.slice().sort((a,b)=> String(a.t).localeCompare(String(b.t))); }
+
+/* ===== いま見ている場所 ===== */
+function curUserId(){ return document.getElementById("selUser").value || ""; }
+function curDate(){ return document.getElementById("theDate").value || todayStr(); }
+function userName(id){ const u = users.find(x=>x.id===id); return u ? u.name : ""; }
+
+/* ===== 名簿の描画 ===== */
+function renderUserSelect(){
+  const sel = document.getElementById("selUser");
+  const keep = sel.value;
+  sel.innerHTML = users.length
+    ? users.map(u=>`<option value="${esc(u.id)}">${esc(withSama(u.name))}</option>`).join("")
+    : `<option value="">（設定タブで登録してください）</option>`;
+  if(keep && users.some(u=>u.id===keep)) sel.value = keep;
+}
+function renderRosters(){
+  const uL = document.getElementById("rosterUsers");
+  uL.innerHTML = users.length
+    ? users.map(u=>`<li><span class="nm">${esc(withSama(u.name))}</span><button data-del-user="${esc(u.id)}">削除</button></li>`).join("")
+    : `<li><span class="nm" style="color:var(--sub);font-size:15px;">まだ誰も登録されていません</span></li>`;
+  const sL = document.getElementById("rosterStaff");
+  sL.innerHTML = staff.length
+    ? staff.map(s=>`<li><span class="nm">${esc(s.name)}</span><button data-del-staff="${esc(s.id)}">削除</button></li>`).join("")
+    : `<li><span class="nm" style="color:var(--sub);font-size:15px;">まだ誰も登録されていません</span></li>`;
+}
+
+/* ===== 記録の描画 ===== */
+function renderDay(){
+  const uidStr = curUserId(), ds = curDate();
+  const listIn = document.getElementById("listIn"), listOut = document.getElementById("listOut");
+  if(!uidStr){
+    listIn.innerHTML = listOut.innerHTML = `<li class="empty">先に「設定」タブで利用者を登録してください。</li>`;
+    setTotals(0,0); return;
+  }
+  const r = dayRec(ds, uidStr);
+  const ins = sortByTime(r.in), outs = sortByTime(r.out);
+
+  listIn.innerHTML = ins.length ? ins.map(x=>
+    `<li class="tap" data-kind="in" data-id="${esc(x.id)}">
+       <span class="t">${esc(x.t)}</span>
+       <span class="nm">${esc(x.what)}</span>
+       <span class="ml">${comma(x.ml)}<span style="font-size:13px;">ml</span></span>
+       <span class="by">${esc(x.by||"")}</span>
+     </li>`).join("") : `<li class="empty">まだ記録がありません</li>`;
+
+  listOut.innerHTML = outs.length ? outs.map(x=>
+    `<li class="tap" data-kind="out" data-id="${esc(x.id)}">
+       <span class="t">${esc(x.t)}</span>
+       <span class="nm"></span>
+       <span class="ml">${comma(x.ml)}<span style="font-size:13px;">ml</span></span>
+       <span class="by">${esc(x.by||"")}</span>
+     </li>`).join("") : `<li class="empty">まだ記録がありません</li>`;
+
+  const sIn  = ins.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const sOut = outs.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  setTotals(sIn, sOut);
+}
+function setTotals(sIn, sOut){
+  document.getElementById("totIn").textContent  = comma(sIn);
+  document.getElementById("totOut").textContent = comma(sOut);
+  const d = sIn - sOut, el = document.getElementById("totDiff");
+  el.textContent = (d>0?"+":"") + comma(d);
+  el.className = d < 0 ? "minus" : (d > 0 ? "plus" : "");
+}
+
+/* ===== 入力パネル ===== */
+let mKind = "in", mEditId = null, mWhatSel = "", mAmtSel = null, mBySel = "";
+
+function chipHtml(label, val, on){
+  return `<button type="button" data-v="${esc(val)}"${on?' class="on"':''}>${esc(label)}</button>`;
+}
+function openModal(kind, rec){
+  mKind = kind; mEditId = rec ? rec.id : null;
+  const box = document.getElementById("mbox");
+  box.className = (kind === "out") ? "out" : "";
+  document.getElementById("mhead").textContent =
+    (kind === "in" ? "IN（飲んだ）" : "OUT（出た）") + (rec ? " を直す" : " を記録");
+  document.getElementById("fldWhat").style.display = (kind === "in") ? "" : "none";
+  document.getElementById("mDel").style.display = rec ? "" : "none";
+  document.getElementById("mErr").classList.remove("on");
+
+  document.getElementById("mTime").value = rec ? rec.t : nowTime();
+
+  // 内容
+  mWhatSel = rec && rec.what ? rec.what : "";
+  const isPreset = WHAT_PRESETS.indexOf(mWhatSel) >= 0;
+  document.getElementById("mWhat").innerHTML =
+    WHAT_PRESETS.map(w=>chipHtml(w, w, w===mWhatSel)).join("") +
+    chipHtml("その他", "__other__", !!mWhatSel && !isPreset);
+  const other = document.getElementById("mWhatOther");
+  if(mWhatSel && !isPreset){ other.style.display=""; other.value = mWhatSel; }
+  else { other.style.display="none"; other.value=""; }
+
+  // 量
+  const amts = (kind === "in") ? IN_AMTS : OUT_AMTS;
+  mAmtSel = rec ? Number(rec.ml) : null;
+  const amtPreset = amts.indexOf(mAmtSel) >= 0;
+  document.getElementById("mAmt").innerHTML = amts.map(a=>chipHtml(a+"ml", a, a===mAmtSel)).join("");
+  document.getElementById("mAmtOther").value = (mAmtSel != null && !amtPreset) ? mAmtSel : "";
+
+  // 担当者
+  mBySel = rec ? (rec.by||"") : "";
+  const known = staff.some(s=>s.name===mBySel);
+  document.getElementById("mBy").innerHTML = staff.length
+    ? staff.map(s=>chipHtml(s.name, s.name, s.name===mBySel)).join("") + (mBySel && !known ? chipHtml(mBySel, mBySel, true) : "")
+    : `<span style="font-size:15px;color:var(--sub);">設定タブで職員を登録すると、ここに出ます</span>`;
+
+  document.getElementById("modal").classList.add("on");
+}
+function closeModal(){ document.getElementById("modal").classList.remove("on"); mEditId = null; }
+function mErr(msg){ const p=document.getElementById("mErr"); p.textContent=msg; p.classList.add("on"); }
+
+function readWhat(){
+  if(mWhatSel === "__other__") return String(document.getElementById("mWhatOther").value||"").trim();
+  return mWhatSel;
+}
+function readAmt(){
+  const free = String(document.getElementById("mAmtOther").value||"").trim();
+  if(free !== ""){ const n = Number(free); return (isFinite(n) && n >= 0) ? Math.round(n) : NaN; }
+  return (mAmtSel == null) ? NaN : Number(mAmtSel);
+}
+function saveModal(){
+  const uidStr = curUserId();
+  if(!uidStr){ mErr("先に利用者を登録してください。"); return; }
+  const t = document.getElementById("mTime").value;
+  if(!/^\d{2}:\d{2}$/.test(t)){ mErr("時刻を入れてください。"); return; }
+  const ml = readAmt();
+  if(!isFinite(ml) || ml <= 0){ mErr("量（ml）を選ぶか、数字で入れてください。"); return; }
+  let what = "";
+  if(mKind === "in"){
+    what = readWhat();
+    if(!what){ mErr("内容を選んでください。"); return; }
+  }
+  const by = mBySel && mBySel !== "__other__" ? mBySel : "";
+  const r = dayRec(curDate(), uidStr);
+  const arr = (mKind === "in") ? r.in : r.out;
+  if(mEditId){
+    const it = arr.find(x=>x.id===mEditId);
+    if(it){ it.t=t; it.ml=ml; it.by=by; if(mKind==="in") it.what=what; }
+  }else{
+    const item = {id:uid(mKind), t:t, ml:ml, by:by};
+    if(mKind==="in") item.what = what;
+    arr.push(item);
+  }
+  saveRecs(); closeModal(); renderDay();
+}
+function deleteModal(){
+  if(!mEditId) return;
+  const r = dayRec(curDate(), curUserId());
+  const arr = (mKind === "in") ? r.in : r.out;
+  const it = arr.find(x=>x.id===mEditId);
+  if(!it) { closeModal(); return; }
+  const what = (mKind==="in") ? ("「"+it.what+" "+it.ml+"ml」") : ("「"+it.ml+"ml」");
+  if(!confirm(it.t+" の "+what+" を削除します。よろしいですか？")) return;
+  const ix = arr.indexOf(it);
+  arr.splice(ix,1);
+  saveRecs(); closeModal(); renderDay();
+}
+
+/* ===== 印刷（紙とそっくりの形） ===== */
+const ROWS_PER_SHEET = 22;
+function jpDate(ds){
+  const p = ds.split("-").map(Number);
+  const d = new Date(p[0], p[1]-1, p[2]);
+  const w = "日月火水木金土"[d.getDay()];
+  return {y:p[0], m:p[1], d:p[2], w:w};
+}
+function buildPrint(){
+  const uidStr = curUserId(), ds = curDate();
+  const nm = uidStr ? withSama(userName(uidStr)) : "";
+  const r = uidStr ? dayRec(ds, uidStr) : {in:[], out:[]};
+  const ins = sortByTime(r.in), outs = sortByTime(r.out);
+  const sIn  = ins.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const sOut = outs.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const dd = jpDate(ds);
+  const pages = Math.max(1, Math.ceil(Math.max(ins.length, outs.length) / ROWS_PER_SHEET));
+  let html = "";
+  for(let p=0; p<pages; p++){
+    const from = p*ROWS_PER_SHEET, last = (p === pages-1);
+    let inRows = "", outRows = "";
+    for(let i=0;i<ROWS_PER_SHEET;i++){
+      const a = ins[from+i];
+      inRows += `<tr><td class="tm">${a?esc(a.t):"&nbsp;"}</td><td class="ct">${a?esc(a.what):""}</td>`
+              + `<td class="ml">${a?comma(a.ml):""}</td><td>${a?esc(a.by||""):""}</td></tr>`;
+      const b = outs[from+i];
+      outRows += `<tr><td class="tm">${b?esc(b.t):"&nbsp;"}</td>`
+               + `<td class="ml">${b?comma(b.ml):""}</td><td>${b?esc(b.by||""):""}</td></tr>`;
+    }
+    const inSum = last
+      ? `<tr class="sumrow"><th>当日合計①</th><td colspan="3">${comma(sIn)} ml</td></tr>` : "";
+    const outSum = last
+      ? `<tr class="sumrow"><th>当日合計②</th><td colspan="2">${comma(sOut)} ml</td></tr>` : "";
+    const diff = sIn - sOut;
+    const diffTable = last
+      ? `<table class="diff"><tr><th>当日摂取量① － 当日排泄量②</th>
+           <td>${(diff>0?"+":"")+comma(diff)} ml</td></tr></table>` : "";
+    html += `<div class="sheet" style="position:relative;">
+      <div class="ttl">水分出納（IN：OUT）表</div>
+      <div class="sub">
+        <span class="nm">${esc(nm)}</span>
+        <span class="dt">${dd.y}年 ${dd.m}月 ${dd.d}日 （ ${dd.w} ）</span>
+        <span class="rng">0:00 〜 23:59</span>
+      </div>
+      <div class="tables">
+        <table class="tin">
+          <colgroup><col style="width:20mm"><col style="width:38mm"><col style="width:25mm"><col style="width:25mm"></colgroup>
+          <tr><th class="grp" colspan="4">IN（摂取量）</th></tr>
+          <tr class="hd"><th>時間</th><th>内容</th><th>量（ml）</th><th>担当者</th></tr>
+          ${inRows}${inSum}
+        </table>
+        <table class="tout">
+          <colgroup><col style="width:22mm"><col style="width:28mm"><col style="width:28mm"></colgroup>
+          <tr><th class="grp" colspan="3">OUT（排出量）</th></tr>
+          <tr class="hd"><th>時間</th><th>量（ml）</th><th>担当者</th></tr>
+          ${outRows}${outSum}
+        </table>
+      </div>
+      ${diffTable}
+      ${pages>1 ? `<div class="note">${p+1} / ${pages} ページ</div>` : ``}
+    </div>`;
+  }
+  document.getElementById("printArea").innerHTML = html;
+}
+
+/* プレビュー（印刷と同じCSSを画面で縮小表示） */
+let pvOn = false;
+function openPreview(){
+  if(!curUserId()){ alert("先に「設定」タブで利用者を登録してください。"); return; }
+  buildPrint();
+  const scale = document.getElementById("pvScale");
+  scale.innerHTML = "";
+  scale.appendChild(document.getElementById("printArea"));
+  document.body.classList.add("pv"); pvOn = true;
+  fitPreview();
+}
+function fitPreview(){
+  if(!pvOn) return;
+  const stage = document.getElementById("pvStage"), scale = document.getElementById("pvScale");
+  const avail = Math.max(200, stage.clientWidth - 24);
+  const w = scale.offsetWidth || 794;
+  const k = Math.min(1, avail / w);
+  scale.style.transform = "scale("+k+") translateX("+((avail - w*k)/2/k)+"px)";
+  stage.style.height = (scale.offsetHeight * k + 40) + "px";
+}
+function closePreview(){
+  const pa = document.getElementById("printArea");
+  document.body.appendChild(pa);            // 印刷時に body 直下へ戻す
+  document.body.classList.remove("pv"); pvOn = false;
+}
+
+/* ===== バックアップ ===== */
+const BK_KEYS = [K_USERS, K_STAFF, K_RECS];
+const BK_UNDO = "sw_undo_v1";      // 読み込み前の自動退避（誤読み込みの保険）
+const BK_AUTO = "sw_autobk_v1";    // 週1回の自動バックアップを最後に走らせた日時
+const BK_EVERY_MS = 7*24*60*60*1000;
+
+function exportBackup(auto){
+  const data = { app:"suibun-suito", v:1, exported:new Date().toISOString(), store:{} };
+  BK_KEYS.forEach(k=>{ const v = localStorage.getItem(k); if(v !== null) data.store[k] = v; });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const d = new Date();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `水分出納バックアップ_${auto===true?"自動_":""}${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function bkHasData(){
+  if(!users.length) return false;
+  return BK_KEYS.some(k=>{ const v = localStorage.getItem(k); return v && v!=="[]" && v!=="{}" && v!=="null"; });
+}
+function showAutoBkMsg(){
+  const el = document.getElementById("autoBkMsg");
+  el.textContent = "📥 週1回の自動バックアップを保存しました";
+  el.classList.add("on");
+  setTimeout(()=>el.classList.remove("on"), 6000);
+}
+function autoBackupWeekly(){
+  try{
+    if(!bkHasData()) return;
+    const last = localStorage.getItem(BK_AUTO);
+    const t = last ? Date.parse(last) : NaN;
+    if(!isNaN(t) && Date.now() - t < BK_EVERY_MS) return;
+    exportBackup(true);
+    localStorage.setItem(BK_AUTO, new Date().toISOString());
+    showAutoBkMsg();
+  }catch(e){}
+}
+function importBackup(file){
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    let d;
+    try{ d = JSON.parse(fr.result); }
+    catch(e){ alert("読み込めませんでした（ファイルが壊れています）。"); return; }
+    if(!d || d.app !== "suibun-suito" || !d.store){
+      alert("このツールのバックアップファイルではないようです。"); return;
+    }
+    const undo = {};
+    BK_KEYS.forEach(k=>{ const v = localStorage.getItem(k); if(v !== null) undo[k] = v; });
+    try{ localStorage.setItem(BK_UNDO, JSON.stringify({saved:new Date().toISOString(), store:undo})); }catch(e){}
+    BK_KEYS.forEach(k=>{
+      if(Object.prototype.hasOwnProperty.call(d.store, k)) localStorage.setItem(k, d.store[k]);
+      else localStorage.removeItem(k);
+    });
+    users = loadArr(K_USERS); staff = loadArr(K_STAFF); recs = loadRecs();
+    renderUserSelect(); renderRosters(); renderDay();
+    alert("読み込みました。（読み込む前のデータは念のため退避してあります）");
+  };
+  fr.readAsText(file);
+}
+
+/* ===== 画面の切り替え ===== */
+function showTab(which){
+  const rec = which === "rec";
+  document.getElementById("tabRec").hidden = !rec;
+  document.getElementById("tabSet").hidden = rec;
+  document.getElementById("tabBtnRec").classList.toggle("on", rec);
+  document.getElementById("tabBtnSet").classList.toggle("on", !rec);
+}
+
+/* ===== ボタンの配線 ===== */
+document.getElementById("tabBtnRec").addEventListener("click", ()=>showTab("rec"));
+document.getElementById("tabBtnSet").addEventListener("click", ()=>{ showTab("set"); renderRosters(); updateUsage(); });
+
+document.getElementById("selUser").addEventListener("change", renderDay);
+document.getElementById("theDate").addEventListener("change", renderDay);
+document.getElementById("btnPrev").addEventListener("click", ()=>{
+  document.getElementById("theDate").value = shiftDate(curDate(), -1); renderDay();
+});
+document.getElementById("btnNext").addEventListener("click", ()=>{
+  document.getElementById("theDate").value = shiftDate(curDate(), 1); renderDay();
+});
+document.getElementById("btnToday").addEventListener("click", ()=>{
+  document.getElementById("theDate").value = todayStr(); renderDay();
+});
+
+document.getElementById("addIn").addEventListener("click", ()=>{
+  if(!curUserId()){ alert("先に「設定」タブで利用者を登録してください。"); return; }
+  openModal("in", null);
+});
+document.getElementById("addOut").addEventListener("click", ()=>{
+  if(!curUserId()){ alert("先に「設定」タブで利用者を登録してください。"); return; }
+  openModal("out", null);
+});
+function bindList(id){
+  document.getElementById(id).addEventListener("click", e=>{
+    const li = e.target.closest("li.tap"); if(!li) return;
+    const r = dayRec(curDate(), curUserId());
+    const arr = li.dataset.kind === "in" ? r.in : r.out;
+    const it = arr.find(x=>x.id === li.dataset.id);
+    if(it) openModal(li.dataset.kind, it);
+  });
+}
+bindList("listIn"); bindList("listOut");
+
+document.getElementById("mNow").addEventListener("click", ()=>{ document.getElementById("mTime").value = nowTime(); });
+document.getElementById("mWhat").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  mWhatSel = b.dataset.v;
+  [].forEach.call(e.currentTarget.querySelectorAll("button"), x=>x.classList.toggle("on", x===b));
+  const other = document.getElementById("mWhatOther");
+  if(mWhatSel === "__other__"){ other.style.display=""; other.focus(); }
+  else { other.style.display="none"; other.value=""; }
+});
+document.getElementById("mAmt").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  mAmtSel = Number(b.dataset.v);
+  [].forEach.call(e.currentTarget.querySelectorAll("button"), x=>x.classList.toggle("on", x===b));
+  document.getElementById("mAmtOther").value = "";   // 自由入力より、押したボタンを優先
+});
+document.getElementById("mAmtOther").addEventListener("input", ()=>{
+  if(String(document.getElementById("mAmtOther").value||"").trim() !== ""){
+    mAmtSel = null;
+    [].forEach.call(document.querySelectorAll("#mAmt button"), x=>x.classList.remove("on"));
+  }
+});
+document.getElementById("mBy").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  mBySel = (mBySel === b.dataset.v) ? "" : b.dataset.v;   // もう一度押すと外れる
+  [].forEach.call(e.currentTarget.querySelectorAll("button"), x=>x.classList.toggle("on", x.dataset.v===mBySel));
+});
+document.getElementById("mSave").addEventListener("click", saveModal);
+document.getElementById("mDel").addEventListener("click", deleteModal);
+document.getElementById("mCancel").addEventListener("click", closeModal);
+document.getElementById("modal").addEventListener("click", e=>{ if(e.target.id==="modal") closeModal(); });
+
+document.getElementById("btnAddUser").addEventListener("click", ()=>{
+  const el = document.getElementById("newUser"), name = String(el.value||"").trim();
+  if(!name) return;
+  users.push({id:uid("u"), name:name}); saveUsers(); el.value="";
+  renderUserSelect(); renderRosters(); renderDay();
+});
+document.getElementById("newUser").addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("btnAddUser").click(); });
+document.getElementById("btnAddStaff").addEventListener("click", ()=>{
+  const el = document.getElementById("newStaff"), name = String(el.value||"").trim();
+  if(!name) return;
+  staff.push({id:uid("s"), name:name}); saveStaff(); el.value="";
+  renderRosters();
+});
+document.getElementById("newStaff").addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("btnAddStaff").click(); });
+
+document.getElementById("rosterUsers").addEventListener("click", e=>{
+  const b = e.target.closest("[data-del-user]"); if(!b) return;
+  const id = b.dataset.delUser, u = users.find(x=>x.id===id); if(!u) return;
+  if(!confirm(withSama(u.name)+" を名簿から消します。\n（これまでの記録は消えません）")) return;
+  users = users.filter(x=>x.id!==id); saveUsers();
+  renderUserSelect(); renderRosters(); renderDay();
+});
+document.getElementById("rosterStaff").addEventListener("click", e=>{
+  const b = e.target.closest("[data-del-staff]"); if(!b) return;
+  const id = b.dataset.delStaff, s = staff.find(x=>x.id===id); if(!s) return;
+  if(!confirm(s.name+" を職員名簿から消します。\n（これまでの記録は消えません）")) return;
+  staff = staff.filter(x=>x.id!==id); saveStaff();
+  renderRosters();
+});
+
+document.getElementById("btnExport").addEventListener("click", ()=>exportBackup(false));
+document.getElementById("btnImportPick").addEventListener("click", ()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", e=>{
+  if(e.target.files && e.target.files[0]) importBackup(e.target.files[0]);
+  e.target.value = "";
+});
+
+document.getElementById("btnPreview").addEventListener("click", openPreview);
+document.getElementById("pvBack").addEventListener("click", closePreview);
+document.getElementById("pvPrint").addEventListener("click", ()=>{ closePreview(); window.print(); });
+window.addEventListener("resize", fitPreview);
+window.addEventListener("orientationchange", ()=>setTimeout(fitPreview, 300));
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape"){ if(pvOn) closePreview(); else closeModal(); }
+});
+
+/* ===== ホーム画面から開いているかの判定 =====
+   iOSでは「Safariのタブ」と「ホーム画面に追加したアプリ」で保存場所が別。
+   さらにSafari側は7日間使わないと保存データが消される対象になる（ホーム画面アプリは対象外）。
+   だからSafariで直接開いている時だけ、上に案内バーを出す。 */
+function isStandalone(){
+  return window.navigator.standalone === true ||
+         (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+}
+function isIOSish(){
+  const ua = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) ||
+         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);   // iPadOS 13以降はMacを名乗る
+}
+function applyHomeTip(){
+  const standalone = isStandalone();
+  const el = document.getElementById("swMode");
+  if(el) el.textContent = standalone ? "ホーム画面のアイコン（このままでOK）" : "ブラウザのタブ（ホーム画面に追加してください）";
+  if(!standalone && isIOSish()) document.getElementById("homeTip").classList.add("on");
+}
+document.getElementById("homeTipClose").addEventListener("click", ()=>{
+  document.getElementById("homeTip").classList.remove("on");   // 次に開いた時はまた出る（大事な案内なので覚えさせない）
+});
+
+/* ===== 起動 ===== */
+users = loadArr(K_USERS);
+staff = loadArr(K_STAFF);
+recs  = loadRecs();
+document.getElementById("theDate").value = todayStr();
+renderUserSelect(); renderRosters(); renderDay(); updateUsage();
+applyHomeTip();
+autoBackupWeekly();
+</script>
+</body>
+</html>
