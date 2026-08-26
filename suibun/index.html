@@ -406,10 +406,13 @@
 
       <div class="fld">
         <span class="lbl">時刻</span>
-        <div class="row">
-          <input type="time" id="mTime">
+        <div class="row" style="align-items:center;">
+          <b id="mTimeDisp" style="font-size:26px; min-width:84px;">--:--</b>
+          <input type="hidden" id="mTime">
           <button class="now" id="mNow">今の時刻</button>
         </div>
+        <div class="chips" id="mHour" style="margin-top:8px;"></div>
+        <div class="chips" id="mMin" style="margin-top:8px;"></div>
       </div>
 
       <div class="fld" id="fldWhat">
@@ -713,6 +716,19 @@ let mKind = "in", mEditId = null, mWhatSel = "", mAmtSel = null, mBySel = "";
 function chipHtml(label, val, on){
   return `<button type="button" data-v="${esc(val)}"${on?' class="on"':''}>${esc(label)}</button>`;
 }
+/* 時刻チップ（回すやつ廃止・タップで選ぶ・分は10分刻み） */
+function nowTime10(){ const d=new Date(); return pad2(d.getHours())+":"+pad2(Math.floor(d.getMinutes()/10)*10); }
+function renderTimeChips(){
+  const t = document.getElementById("mTime").value || "";
+  const hh = t.slice(0,2), mm = t.slice(3,5);
+  let hs = "";
+  for(let h=0; h<24; h++){ const v = pad2(h); hs += chipHtml(h+"時", v, v===hh); }
+  document.getElementById("mHour").innerHTML = hs;
+  document.getElementById("mMin").innerHTML =
+    ["00","10","20","30","40","50"].map(m=>chipHtml(m+"分", m, m===mm)).join("");
+  document.getElementById("mTimeDisp").textContent = t || "--:--";
+}
+function setModalTime(t){ document.getElementById("mTime").value = t; renderTimeChips(); }
 function openModal(kind, rec){
   mKind = kind; mEditId = rec ? rec.id : null;
   const box = document.getElementById("mbox");
@@ -723,7 +739,7 @@ function openModal(kind, rec){
   document.getElementById("mDel").style.display = rec ? "" : "none";
   document.getElementById("mErr").classList.remove("on");
 
-  document.getElementById("mTime").value = rec ? rec.t : nowTime();
+  setModalTime(rec ? rec.t : nowTime10());
 
   // 内容
   mWhatSel = rec && rec.what ? rec.what : "";
@@ -1159,7 +1175,17 @@ function bindList(id){
 }
 bindList("listIn"); bindList("listOut");
 
-document.getElementById("mNow").addEventListener("click", ()=>{ document.getElementById("mTime").value = nowTime(); });
+document.getElementById("mNow").addEventListener("click", ()=>{ setModalTime(nowTime10()); });
+document.getElementById("mHour").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  const t = document.getElementById("mTime").value || nowTime10();
+  setModalTime(b.dataset.v + ":" + t.slice(3,5));
+});
+document.getElementById("mMin").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  const t = document.getElementById("mTime").value || nowTime10();
+  setModalTime(t.slice(0,2) + ":" + b.dataset.v);
+});
 document.getElementById("mWhat").addEventListener("click", e=>{
   const b = e.target.closest("button"); if(!b) return;
   mWhatSel = b.dataset.v;
