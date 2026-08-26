@@ -80,6 +80,9 @@
   .tot.diff{background:#f4f7fa;}
   .tot.diff b.minus{color:var(--red);}
   .tot.diff b.plus{color:var(--ok);}
+  /* 0時のしめで補正が効いている時だけ出る内訳（補正なしの日は :empty で消える） */
+  .tot .brk{display:block; font-size:13px; color:var(--sub); margin-top:2px; line-height:1.5;}
+  .tot .brk:empty{display:none;}
 
   /* ===== IN / OUT の2列 ===== */
   .cols{display:flex; gap:12px; margin-top:12px; align-items:flex-start; flex-wrap:wrap;}
@@ -93,6 +96,13 @@
   }
   .col.in .add{border-color:#9cc3e6; color:var(--blue);}
   .col.out .add{border-color:#e7c294; color:var(--amber);}
+  /* 0時のしめ（ハルンバッグの目盛り）のボタン。常に出しておく＝夜勤が迷わない */
+  .col.out .closebtn{
+    display:block; width:calc(100% - 24px); margin:0 12px 8px; min-height:54px;
+    border:1px solid #e7c294; border-radius:12px; background:var(--amber-soft);
+    color:var(--amber); font-size:17px; font-weight:700; text-align:center; padding:8px 12px;
+  }
+  .col.out .closehint{margin:0 12px 12px; font-size:14px; color:var(--sub); line-height:1.6;}
   ul.recs{list-style:none; margin:0; padding:0 12px 12px;}
   ul.recs li{
     display:flex; align-items:center; gap:10px; width:100%; text-align:left;
@@ -191,6 +201,26 @@
   #mfoot #mDel{color:var(--red); flex:0 0 92px;}
   #mErr{color:var(--red); font-size:15px; font-weight:700; margin:0 0 10px; display:none;}
   #mErr.on{display:block;}
+
+  /* ===== 0時のしめ（ハルンバッグの目盛り）のパネル ===== */
+  #cmodal{display:none; position:fixed; inset:0; z-index:200; background:rgba(15,25,35,.45);}
+  #cmodal.on{display:block;}
+  #cbox{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+        width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 40px); overflow:auto;
+        background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  #cbox .hd{position:sticky; top:0; padding:12px 16px; font-size:19px; font-weight:700; color:#fff; background:var(--amber);}
+  #cbox .bd{padding:14px 16px 4px;}
+  #cbox .chips button.on{background:var(--amber); border-color:var(--amber); color:#fff;}
+  #cDay button{flex:1 1 200px; min-height:58px; font-size:17px;}
+  #cDayNote{margin:8px 0 0;}
+  #cbox .ft{position:sticky; bottom:0; background:#fff; border-top:1px solid var(--line);
+            padding:12px 16px calc(12px + env(safe-area-inset-bottom)); display:flex; gap:10px;}
+  #cbox .ft button{min-height:56px; flex:1; border-radius:12px; font-size:18px; font-weight:700; border:1px solid var(--line); background:#fff;}
+  /* ⚠ #cbox .ft button より詳細度を高くしないと背景色が負ける（#mfoot #mSave と同じ理由） */
+  #cbox .ft #cSave{flex:2; background:var(--amber); border-color:var(--amber); color:#fff;}
+  #cbox .ft #cDel{color:var(--red); flex:0 0 92px;}
+  #cErr{color:var(--red); font-size:15px; font-weight:700; margin:0 0 10px; display:none;}
+  #cErr.on{display:block;}
 
   /* ===== 印刷イメージの確認（プレビュー）=====
      印刷用のスタイル（.sheet 以下）は media query の外に置き、プレビューでも
@@ -293,7 +323,7 @@
 
     <div class="totals">
       <div class="tot in"><span class="cap">① 当日の摂取 IN</span><b id="totIn">0</b><span class="unit">ml</span></div>
-      <div class="tot out"><span class="cap">② 当日の排出 OUT</span><b id="totOut">0</b><span class="unit">ml</span></div>
+      <div class="tot out"><span class="cap">② 当日の排出 OUT</span><b id="totOut">0</b><span class="unit">ml</span><span class="brk" id="outBrk"></span></div>
       <div class="tot diff"><span class="cap">①−② 差引</span><b id="totDiff">0</b><span class="unit">ml</span></div>
     </div>
 
@@ -306,6 +336,8 @@
       <div class="col out">
         <h2>OUT（排出量）</h2>
         <button class="add" id="addOut">＋ 出た を記録</button>
+        <button class="closebtn" id="btnClose">🕛 0時の尿量（しめ）を記録</button>
+        <p class="closehint">バッグの目盛りを日付が変わる0時に読んで記録すると、日ごとの尿量が自動で正しく計算されます</p>
         <ul class="recs" id="listOut"></ul>
       </div>
     </div>
@@ -408,6 +440,41 @@
   </div>
 </div>
 
+<!-- ========== 0時のしめ（ハルンバッグの目盛り） ========== -->
+<div id="cmodal">
+  <div id="cbox">
+    <div class="hd">🕛 0時の尿量（しめ）</div>
+    <div class="bd">
+      <p id="cErr"></p>
+
+      <div class="fld">
+        <span class="lbl">どの日のしめ</span>
+        <div class="chips" id="cDay"></div>
+        <p class="hint" id="cDayNote"></p>
+      </div>
+
+      <div class="fld">
+        <span class="lbl">量（ml）</span>
+        <div class="chips" id="cAmt"></div>
+        <div class="row" style="margin-top:8px;">
+          <input type="number" id="cAmtOther" inputmode="numeric" min="0" max="9999" step="10" placeholder="自由入力">
+          <span style="font-size:15px; color:var(--sub);">ml</span>
+        </div>
+      </div>
+
+      <div class="fld">
+        <span class="lbl">担当者</span>
+        <div class="chips" id="cBy"></div>
+      </div>
+    </div>
+    <div class="ft">
+      <button id="cCancel">やめる</button>
+      <button id="cDel">削除</button>
+      <button id="cSave">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== 期間をまとめて印刷 ========== -->
 <div id="rmodal">
   <div id="rbox">
@@ -461,7 +528,11 @@
    キーはこの4つだけ。増やしたら BK_KEYS にも足すこと。 */
 const K_USERS = "sw_users_v1";   // 利用者名簿 [{id,name}]
 const K_STAFF = "sw_staff_v1";   // 職員名簿   [{id,name}]
-const K_RECS  = "sw_recs_v1";    // 記録 { "YYYY-MM-DD": { userId: { in:[], out:[] } } }
+/* 記録 { "YYYY-MM-DD": { userId: { in:[], out:[], close:number, closeBy:string } } }
+   close = その日を「締める」0時＝翌日0:00 に読んだハルンバッグの目盛り（ml）。
+   例）recs["2026-08-25"][uid].close = 150 は「8/26の0:00に読んだ値＝8/25のしめ」。
+   ※ close は K_RECS の中身なので BK_KEYS は増やさない（バックアップは自動で含まれる）。 */
+const K_RECS  = "sw_recs_v1";
 const KEEP_DAYS = 365;           // これより古い日付は自動で捨てる（1年）
 
 const WHAT_PRESETS = ["お茶","水","紅茶","コーヒー","ジュース","牛乳","みそ汁"];
@@ -530,9 +601,45 @@ function dayRec(ds, uidStr){
   const r = d[uidStr] || (d[uidStr] = {in:[], out:[]});
   if(!Array.isArray(r.in)) r.in = [];
   if(!Array.isArray(r.out)) r.out = [];
+  // close は「あるか無いか」で計算が変わる。数字にならない値が紛れ込んだら消す（無かった扱いに戻す）。
+  if(Object.prototype.hasOwnProperty.call(r, "close")){
+    const c = Number(r.close);
+    if(r.close === null || r.close === "" || !isFinite(c) || c < 0) delete r.close;
+    else r.close = Math.round(c);
+  }
+  if(!Object.prototype.hasOwnProperty.call(r, "close")) delete r.closeBy;
+  else if(Object.prototype.hasOwnProperty.call(r, "closeBy") && typeof r.closeBy !== "string") r.closeBy = String(r.closeBy == null ? "" : r.closeBy);
   return r;
 }
 function sortByTime(list){ return list.slice().sort((a,b)=> String(a.t).localeCompare(String(b.t))); }
+
+/* ===== 0時のしめ（ハルンバッグの目盛り）の計算 =====
+   その日Dの補正後OUT合計：  ②(D) = Σout(D) + close(D) − close(D−1)
+   ・close(D)＝Dを締める0時（＝D+1の0:00）に読んだ目盛り。まだバッグの中にある＝Dの尿量に足す。
+   ・close(D−1)＝前日を締めた時点でバッグにあった分。Dの朝の廃棄に混ざっているので引く。
+   ・両方とも未入力の日は補正しない（＝Σoutそのまま。今までと同じ表示）。
+   ・どちらか一方でも入っていれば式を適用する。マイナスになっても隠さない（入力ミスに気づけるように）。 */
+
+/* recs を読むだけ（dayRec と違い、空の入れ物を作らない）。未入力なら null */
+function closeOf(ds, uidStr){
+  if(!uidStr) return null;
+  const d = recs[ds]; if(!d) return null;
+  const r = d[uidStr]; if(!r) return null;
+  const c = Number(r.close);
+  if(r.close === null || r.close === undefined || r.close === "" || !isFinite(c) || c < 0) return null;
+  return Math.round(c);
+}
+function closeByOf(ds, uidStr){
+  if(closeOf(ds, uidStr) === null) return "";
+  const r = recs[ds][uidStr];
+  return (typeof r.closeBy === "string") ? r.closeBy : "";
+}
+function outAdjust(ds, uidStr){
+  const cur  = closeOf(ds, uidStr);
+  const prev = closeOf(shiftDate(ds, -1), uidStr);
+  const on = (cur !== null || prev !== null);
+  return { on:on, cur:cur, prev:prev, delta: on ? ((cur||0) - (prev||0)) : 0 };
+}
 
 /* ===== いま見ている場所 ===== */
 function curUserId(){ return document.getElementById("selUser").value || ""; }
@@ -565,7 +672,7 @@ function renderDay(){
   const listIn = document.getElementById("listIn"), listOut = document.getElementById("listOut");
   if(!uidStr){
     listIn.innerHTML = listOut.innerHTML = `<li class="empty">先に「設定」タブで利用者を登録してください。</li>`;
-    setTotals(0,0); return;
+    setTotals(0,0); renderCloseUI(ds, "", 0, null); return;
   }
   const r = dayRec(ds, uidStr);
   const ins = sortByTime(r.in), outs = sortByTime(r.out);
@@ -586,9 +693,11 @@ function renderDay(){
        <span class="by">${esc(x.by||"")}</span>
      </li>`).join("") : `<li class="empty">まだ記録がありません</li>`;
 
-  const sIn  = ins.reduce((a,x)=>a+(Number(x.ml)||0),0);
-  const sOut = outs.reduce((a,x)=>a+(Number(x.ml)||0),0);
-  setTotals(sIn, sOut);
+  const sIn     = ins.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const sOutRaw = outs.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const adj = outAdjust(ds, uidStr);          // 0時のしめによる補正
+  setTotals(sIn, sOutRaw + adj.delta);
+  renderCloseUI(ds, uidStr, sOutRaw, adj);
 }
 function setTotals(sIn, sOut){
   document.getElementById("totIn").textContent  = comma(sIn);
@@ -700,16 +809,113 @@ function jpDate(ds){
   const w = "日月火水木金土"[d.getDay()];
   return {y:p[0], m:p[1], d:p[2], w:w};
 }
+function jpMD(ds){ const d = jpDate(ds); return d.m+"/"+d.d; }
+
+/* ===== 0時のしめ（ハルンバッグの目盛り）の入力パネル ===== */
+const CLOSE_AMTS = [100,200,300,500];
+let cDs = "", cAmtSel = null, cBySel = "";
+
+/* OUT列のしめボタンと、②カードの内訳を書き換える */
+function renderCloseUI(ds, uidStr, sOutRaw, adj){
+  const btn = document.getElementById("btnClose");
+  const brk = document.getElementById("outBrk");
+  if(!uidStr){
+    btn.textContent = "🕛 0時の尿量（しめ）を記録";
+    brk.textContent = "";
+    return;
+  }
+  const cur = closeOf(ds, uidStr);
+  btn.textContent = (cur === null)
+    ? "🕛 0時の尿量（しめ）を記録"
+    : "🕛 0時のしめ："+comma(cur)+"ml（タップで直す）";
+  if(adj && adj.on){
+    let s = "廃棄 " + comma(sOutRaw);
+    if(adj.cur  !== null) s += " ＋ しめ " + comma(adj.cur);
+    if(adj.prev !== null) s += " − 前日しめ " + comma(adj.prev);
+    brk.textContent = s;
+  }else{
+    brk.textContent = "";     // 補正なしの日は何も出さない
+  }
+}
+function cErr(msg){ const p=document.getElementById("cErr"); p.textContent=msg; p.classList.add("on"); }
+function closeCloseModal(){ document.getElementById("cmodal").classList.remove("on"); }
+
+/* baseDs＝画面で選んでいる日付。切替ボタンは【前の日】【この日】の2つだけ。 */
+function renderCloseModal(baseDs){
+  const uidStr = curUserId();
+  const prevDs = shiftDate(baseDs, -1);
+  document.getElementById("cDay").innerHTML =
+      chipHtml("前の日 "+jpMD(prevDs)+"のしめ", prevDs, cDs===prevDs)
+    + chipHtml("この日 "+jpMD(baseDs)+"のしめ", baseDs, cDs===baseDs);
+  document.getElementById("cDayNote").textContent =
+    jpMD(cDs)+" の分として、"+jpMD(shiftDate(cDs,1))+" の 0:00 に読んだバッグの目盛りを入れてください。";
+
+  const cur = closeOf(cDs, uidStr);
+  cAmtSel = cur;
+  const preset = CLOSE_AMTS.indexOf(cur) >= 0;
+  document.getElementById("cAmt").innerHTML = CLOSE_AMTS.map(a=>chipHtml(a+"ml", a, a===cur)).join("");
+  document.getElementById("cAmtOther").value = (cur !== null && !preset) ? cur : "";
+
+  cBySel = closeByOf(cDs, uidStr);
+  const known = staff.some(s=>s.name===cBySel);
+  document.getElementById("cBy").innerHTML = staff.length
+    ? staff.map(s=>chipHtml(s.name, s.name, s.name===cBySel)).join("") + (cBySel && !known ? chipHtml(cBySel, cBySel, true) : "")
+    : `<span style="font-size:15px;color:var(--sub);">設定タブで職員を登録すると、ここに出ます</span>`;
+
+  document.getElementById("cDel").style.display = (cur === null) ? "none" : "";
+}
+function openCloseModal(){
+  const uidStr = curUserId();
+  if(!uidStr){ alert("先に「設定」タブで利用者を登録してください。"); return; }
+  const ds = curDate();
+  // 夜勤が0時をすぎて開いた時、締めたいのは「前の日」。実際の今日を見ている時だけそうする。
+  const h = new Date().getHours();
+  cDs = (ds === todayStr() && h < 6) ? shiftDate(ds, -1) : ds;
+  document.getElementById("cErr").classList.remove("on");
+  renderCloseModal(ds);
+  document.getElementById("cmodal").classList.add("on");
+}
+function readCloseAmt(){
+  const free = String(document.getElementById("cAmtOther").value||"").trim();
+  if(free !== ""){ const n = Number(free); return (isFinite(n) && n >= 0) ? Math.round(n) : NaN; }
+  return (cAmtSel == null) ? NaN : Number(cAmtSel);
+}
+function saveCloseModal(){
+  const uidStr = curUserId();
+  if(!uidStr){ cErr("先に利用者を登録してください。"); return; }
+  const ml = readCloseAmt();
+  if(!isFinite(ml) || ml < 0){ cErr("量（ml）を選ぶか、数字で入れてください。（バッグが空なら 0）"); return; }
+  const r = dayRec(cDs, uidStr);
+  r.close = Math.round(ml);
+  r.closeBy = cBySel || "";
+  saveRecs(); closeCloseModal(); renderDay();
+}
+function deleteCloseModal(){
+  const uidStr = curUserId();
+  const cur = closeOf(cDs, uidStr);
+  if(cur === null){ closeCloseModal(); return; }
+  if(!confirm(jpMD(cDs)+" の 0時のしめ「"+comma(cur)+"ml」を削除します。よろしいですか？")) return;
+  const r = dayRec(cDs, uidStr);
+  delete r.close; delete r.closeBy;
+  saveRecs(); closeCloseModal(); renderDay();
+}
 /* 1日ぶんの紙（22行で足りなければ複数ページ）を作る。
    1日版でも期間まとめ版でも、ここが作る紙は完全に同じ形。 */
 function sheetsForDay(ds, uidStr){
   const nm = uidStr ? withSama(userName(uidStr)) : "";
   const r = uidStr ? dayRec(ds, uidStr) : {in:[], out:[]};
   const ins = sortByTime(r.in), outs = sortByTime(r.out);
-  const sIn  = ins.reduce((a,x)=>a+(Number(x.ml)||0),0);
-  const sOut = outs.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const sIn     = ins.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  const sOutRaw = outs.reduce((a,x)=>a+(Number(x.ml)||0),0);
+  // 0時のしめの補正を、OUT表の実記録のうしろに「仮想の行」として足す。
+  // 行数に乗せておけば、22行あふれ時の改頁もそのまま正しくなる。
+  const adj = uidStr ? outAdjust(ds, uidStr) : {on:false, cur:null, prev:null, delta:0};
+  const outsDisp = outs.map(x=>({t:esc(x.t), ml:comma(x.ml), by:esc(x.by||"")}));
+  if(adj.cur  !== null) outsDisp.push({t:"24:00",  ml:"+"+comma(adj.cur),  by:esc(closeByOf(ds, uidStr))});
+  if(adj.prev !== null) outsDisp.push({t:"前日分", ml:"−"+comma(adj.prev), by:""});
+  const sOut = sOutRaw + adj.delta;
   const dd = jpDate(ds);
-  const pages = Math.max(1, Math.ceil(Math.max(ins.length, outs.length) / ROWS_PER_SHEET));
+  const pages = Math.max(1, Math.ceil(Math.max(ins.length, outsDisp.length) / ROWS_PER_SHEET));
   let html = "";
   for(let p=0; p<pages; p++){
     const from = p*ROWS_PER_SHEET, last = (p === pages-1);
@@ -718,9 +924,9 @@ function sheetsForDay(ds, uidStr){
       const a = ins[from+i];
       inRows += `<tr><td class="tm">${a?esc(a.t):"&nbsp;"}</td><td class="ct">${a?esc(a.what):""}</td>`
               + `<td class="ml">${a?comma(a.ml):""}</td><td>${a?esc(a.by||""):""}</td></tr>`;
-      const b = outs[from+i];
-      outRows += `<tr><td class="tm">${b?esc(b.t):"&nbsp;"}</td>`
-               + `<td class="ml">${b?comma(b.ml):""}</td><td>${b?esc(b.by||""):""}</td></tr>`;
+      const b = outsDisp[from+i];   // 中身はすでに esc / comma 済み（仮想行と同じ形に揃えてある）
+      outRows += `<tr><td class="tm">${b?b.t:"&nbsp;"}</td>`
+               + `<td class="ml">${b?b.ml:""}</td><td>${b?b.by:""}</td></tr>`;
     }
     const inSum = last
       ? `<tr class="sumrow"><th>当日合計①</th><td colspan="3">${comma(sIn)} ml</td></tr>` : "";
@@ -773,7 +979,8 @@ function buildPrint(dsList){
 function hasRecords(ds, uidStr){
   const d = recs[ds]; if(!d) return false;
   const r = d[uidStr]; if(!r) return false;
-  return (Array.isArray(r.in) && r.in.length > 0) || (Array.isArray(r.out) && r.out.length > 0);
+  return (Array.isArray(r.in) && r.in.length > 0) || (Array.isArray(r.out) && r.out.length > 0)
+      || (closeOf(ds, uidStr) !== null);   // しめだけ入っている日も印刷対象
 }
 /* 期間の中で「記録がある日」だけを古い順に返す（記録なしの日は紙を出さない） */
 function daysWithRecords(from, to, uidStr){
@@ -784,7 +991,9 @@ function daysWithRecords(from, to, uidStr){
 function rangePages(list, uidStr){
   return list.reduce((a, ds)=>{
     const r = dayRec(ds, uidStr);
-    return a + Math.max(1, Math.ceil(Math.max(r.in.length, r.out.length) / ROWS_PER_SHEET));
+    const adj = outAdjust(ds, uidStr);
+    const outN = r.out.length + (adj.cur !== null ? 1 : 0) + (adj.prev !== null ? 1 : 0);  // 仮想行も数える
+    return a + Math.max(1, Math.ceil(Math.max(r.in.length, outN) / ROWS_PER_SHEET));
   }, 0);
 }
 function monthRange(offset){          // 0=今月・1=先月
@@ -981,6 +1190,36 @@ document.getElementById("mDel").addEventListener("click", deleteModal);
 document.getElementById("mCancel").addEventListener("click", closeModal);
 document.getElementById("modal").addEventListener("click", e=>{ if(e.target.id==="modal") closeModal(); });
 
+/* --- 0時のしめ --- */
+document.getElementById("btnClose").addEventListener("click", openCloseModal);
+document.getElementById("cDay").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  cDs = b.dataset.v;
+  document.getElementById("cErr").classList.remove("on");
+  renderCloseModal(curDate());     // 選び直した日の値を読み直す
+});
+document.getElementById("cAmt").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  cAmtSel = Number(b.dataset.v);
+  [].forEach.call(e.currentTarget.querySelectorAll("button"), x=>x.classList.toggle("on", x===b));
+  document.getElementById("cAmtOther").value = "";   // 自由入力より、押したボタンを優先
+});
+document.getElementById("cAmtOther").addEventListener("input", ()=>{
+  if(String(document.getElementById("cAmtOther").value||"").trim() !== ""){
+    cAmtSel = null;
+    [].forEach.call(document.querySelectorAll("#cAmt button"), x=>x.classList.remove("on"));
+  }
+});
+document.getElementById("cBy").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  cBySel = (cBySel === b.dataset.v) ? "" : b.dataset.v;   // もう一度押すと外れる
+  [].forEach.call(e.currentTarget.querySelectorAll("button"), x=>x.classList.toggle("on", x.dataset.v===cBySel));
+});
+document.getElementById("cSave").addEventListener("click", saveCloseModal);
+document.getElementById("cDel").addEventListener("click", deleteCloseModal);
+document.getElementById("cCancel").addEventListener("click", closeCloseModal);
+document.getElementById("cmodal").addEventListener("click", e=>{ if(e.target.id==="cmodal") closeCloseModal(); });
+
 document.getElementById("btnAddUser").addEventListener("click", ()=>{
   const el = document.getElementById("newUser"), name = String(el.value||"").trim();
   if(!name) return;
@@ -1048,7 +1287,7 @@ document.getElementById("pvPrint").addEventListener("click", ()=>window.print())
 window.addEventListener("resize", fitPreview);
 window.addEventListener("orientationchange", ()=>setTimeout(fitPreview, 300));
 document.addEventListener("keydown", e=>{
-  if(e.key === "Escape"){ if(pvOn) closePreview(); else { closeModal(); closeRange(); } }
+  if(e.key === "Escape"){ if(pvOn) closePreview(); else { closeModal(); closeCloseModal(); closeRange(); } }
 });
 
 /* ===== ホーム画面から開いているかの判定 =====
