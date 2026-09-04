@@ -9,11 +9,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="水分出納">
+<meta name="apple-mobile-web-app-title" content="💧水分出納💧">
 <meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#2e6fb7">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAACcElEQVR42u3cwRGEQAwDQSIitQuP8OB1Kbi8UqtqElj3F67797xSSpdHENAS0BLQEtACWgJaAloCWgJaQEtAS0BLQEtAC2gJaAloCWgJaAEtAS0BLQEtAS2gJaAloCWgJaBH+89bAA20gAYaaAENtIAGuhQz1EADLaCBBtpDDGGGGmigBTTQQGsIM9RAAy2ggQZaQ5ihBhpoAQ000BrCDDXQQAvozZihBhpoAQ000BrCDDXQQAvozZihBhpoAQ000BrCDDXQQAvozZihBhpoAb0ZM9RAAy2gN2OGGmigBfRmzFADDbSABhpomKEGGmiggYYZaqCBBlqrMUMNNNBAazNmqIEGGmhtxgw10HGYoQYaaKBhPmFuBXQEZLCBjsUMNdBxmKEGOgoy2EC/6QMaZqiBhhlqoGGGGmiYoQYaaKBhhhpomKEGGmaogQYa6E7Q1okaaKCBhhlqoIEGGmiYoQbagIYZaqCBBhpooIEGGmaogTaggQYaaKCBBhpmqIEGGmigDWiggQYaaKCBBhpooIEGGmgDGmiggQYaaKCBBhpooIEG2oAGGmiggQYaaKCBBhpooH2xYomYgTaggQYaaKCBBhpqmIE2oP1OF2aggQYaaKCBBhpqmIE2oKGGGWiggQYaapiBhhpmoIEGGmqYgYYaZqChhhloqGEGuhV1420rQTegbr1rLehk1M03rQadiLr9nvWgk1C7JdARsN0O6BjUbgZ0BGw3AjoCtpsAHQHbDYA+Hre3Bvpo4N4S6COhexugJaAFtAS0BLQEtAS0gJaAloCWgJaAFtAS0BLQEtAS0AJaAloCWgJaAlpAS+v7AGNICk387FmaAAAAAElFTkSuQmCC">
-<title>水分出納（IN：OUT）表</title>
+<title>💧水分出納💧</title>
 <style>
   :root{
     --ink:#1a2b3c; --sub:#5b6b7c; --line:#d7dde4; --bg:#eef2f6; --card:#fff;
@@ -151,6 +151,11 @@
   ul.roster li button{min-width:52px; min-height:44px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--red); font-size:15px;}
   .bkbtns{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
   .bkbtns button{min-height:52px; padding:10px 18px; border:1px solid var(--line); border-radius:10px; background:#fff; font-weight:700;}
+  /* クラウドの控え。ファイル書き出しとは別ものだと分かるように線で区切る */
+  .cloudbk{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);}
+  .cloudbk #cloudLine{font-weight:700; color:var(--ink); margin:0;}
+  .cloudbk #cloudNote{margin:10px 0 0; padding:10px 12px; color:#6b4a10;
+                      background:#fff6e5; border:1px solid #e6b366; border-radius:10px;}
 
   /* ホーム画面から開いてね、の案内バー（Safariで直接開いている時だけ出る） */
   #homeTip{display:none; background:#fff6e5; border-bottom:2px solid #e6b366; color:#6b4a10;
@@ -363,6 +368,18 @@
       </p>
     </div>
     <div class="card">
+      <h3>🔗 このアプリのURL（2つある）</h3>
+      <p class="hint">
+        <b>職場のiPad用（こまごめのGitHub・Claudeのアイコンが出ない版）</b><br>
+        <a href="https://shoukibotakinoukomagome.github.io/care-tools/suibun/" style="word-break:break-all;color:var(--blue);font-weight:700;">https://shoukibotakinoukomagome.github.io/care-tools/suibun/</a><br>
+        Safariで開いて 共有⬆️ →「ホーム画面に追加」。<br><br>
+        <b>Claude版（☁️クラウドの控えが使える版）</b><br>
+        <a href="https://claude.ai/code/artifact/bd5b78f3-965e-4221-b7a5-0b2a64442b35" style="word-break:break-all;color:var(--blue);font-weight:700;">https://claude.ai/code/artifact/bd5b78f3-965e-4221-b7a5-0b2a64442b35</a><br>
+        Claudeにログインした端末でだけ開ける。<br><br>
+        <span style="font-size:13px;">※ 記録は「開いた場所ごと」に別々に保存されます。片方からもう片方へ移すときは、💾書き出し → 📂読み込み。</span>
+      </p>
+    </div>
+    <div class="card">
       <h3>利用者の名簿</h3>
       <p class="hint">水分の記録をつける人を登録します。「様」は自動でつくので名前だけ入れてください。</p>
       <div class="rosterrow">
@@ -393,6 +410,18 @@
         <button id="btnImportPick">📂 ファイルから読み込む</button>
         <input type="file" id="importFile" accept=".json,application/json" style="display:none">
       </div>
+
+      <!-- クラウドの控え（Claudeのdb）。この端末で使えない時はボタンごと出さない -->
+      <div class="cloudbk">
+        <p class="hint" id="cloudLine">☁️ クラウドの控え: 確認中…</p>
+        <div class="bkbtns" id="cloudBtns" style="display:none;">
+          <button id="btnCloudRestore">☁️ クラウドの控えから戻す</button>
+        </div>
+        <p class="hint" id="cloudNote" style="display:none;">
+          ※ 名前（利用者・職員）は<b>この端末の中だけ</b>に保存されていて、クラウドの控えには入っていません。<br>
+          上の「利用者の名簿」「職員の名簿」で名前を付け直してください。
+        </p>
+      </div>
     </div>
   </section>
 </main>
@@ -406,13 +435,10 @@
 
       <div class="fld">
         <span class="lbl">時刻</span>
-        <div class="row" style="align-items:center;">
-          <b id="mTimeDisp" style="font-size:26px; min-width:84px;">--:--</b>
-          <input type="hidden" id="mTime">
+        <div class="row">
+          <input type="time" id="mTime">
           <button class="now" id="mNow">今の時刻</button>
         </div>
-        <div class="chips" id="mHour" style="margin-top:8px;"></div>
-        <div class="chips" id="mMin" style="margin-top:8px;"></div>
       </div>
 
       <div class="fld" id="fldWhat">
@@ -580,9 +606,13 @@ function saveRecs(){
       alert("⚠️ 保存できませんでした。\niPadの保存できる量がいっぱいです。\n\n"
           + "「設定」タブの［全部をファイルに書き出す］でバックアップを取って、\n管理者に連絡してください。");
     }
+    // ⚠ localStorageに書けなかった今こそ記録が一番あぶない。控えだけでも残しに行く。
+    cloudQueueSave();
     return;
   }
   updateUsage();
+  // 保存できた後にだけ、クラウドの控えを予約する（数秒まとめて1回だけ書く）
+  cloudQueueSave();
 }
 /* 保存領域の使用ぐあい（目安5MB／iPadのSafariの1サイトあたりの上限） */
 function updateUsage(){
@@ -716,19 +746,6 @@ let mKind = "in", mEditId = null, mWhatSel = "", mAmtSel = null, mBySel = "";
 function chipHtml(label, val, on){
   return `<button type="button" data-v="${esc(val)}"${on?' class="on"':''}>${esc(label)}</button>`;
 }
-/* 時刻チップ（回すやつ廃止・タップで選ぶ・分は10分刻み） */
-function nowTime10(){ const d=new Date(); return pad2(d.getHours())+":"+pad2(Math.floor(d.getMinutes()/10)*10); }
-function renderTimeChips(){
-  const t = document.getElementById("mTime").value || "";
-  const hh = t.slice(0,2), mm = t.slice(3,5);
-  let hs = "";
-  for(let h=0; h<24; h++){ const v = pad2(h); hs += chipHtml(h+"時", v, v===hh); }
-  document.getElementById("mHour").innerHTML = hs;
-  document.getElementById("mMin").innerHTML =
-    ["00","10","20","30","40","50"].map(m=>chipHtml(m+"分", m, m===mm)).join("");
-  document.getElementById("mTimeDisp").textContent = t || "--:--";
-}
-function setModalTime(t){ document.getElementById("mTime").value = t; renderTimeChips(); }
 function openModal(kind, rec){
   mKind = kind; mEditId = rec ? rec.id : null;
   const box = document.getElementById("mbox");
@@ -739,7 +756,7 @@ function openModal(kind, rec){
   document.getElementById("mDel").style.display = rec ? "" : "none";
   document.getElementById("mErr").classList.remove("on");
 
-  setModalTime(rec ? rec.t : nowTime10());
+  document.getElementById("mTime").value = rec ? rec.t : nowTime();
 
   // 内容
   mWhatSel = rec && rec.what ? rec.what : "";
@@ -1075,17 +1092,35 @@ const BK_UNDO = "sw_undo_v1";      // 読み込み前の自動退避（誤読み
 const BK_AUTO = "sw_autobk_v1";    // 週1回の自動バックアップを最後に走らせた日時
 const BK_EVERY_MS = 7*24*60*60*1000;
 
-function exportBackup(auto){
+/* ⚠ Claudeのページ内では <a download> での保存が無効（2026-09-03実測・記録消失の実害あり）。
+   Claudeのdownloads機能が使えればそちらで保存し、ダメな環境（保存用コピーを直接開いた時等）だけ従来の方式に落とす。
+   戻り値: 保存できたらtrue／断られた・保留ならfalse。 */
+async function exportBackup(auto){
   const data = { app:"suibun-suito", v:1, exported:new Date().toISOString(), store:{} };
   BK_KEYS.forEach(k=>{ const v = localStorage.getItem(k); if(v !== null) data.store[k] = v; });
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
+  const text = JSON.stringify(data, null, 2);
   const d = new Date();
+  const fname = `水分出納バックアップ_${auto===true?"自動_":""}${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`;
+  let dl = null;
+  try{ dl = (window.claude && window.claude.use) ? await window.claude.use("downloads") : null; }catch(e){ dl = null; }
+  if(dl){
+    try{
+      await dl.save({filename:fname, data:text});
+      return true;
+    }catch(e){
+      // declined=保存しないを選んだ／rate_limited=確認が出せない状態。どちらも保存されていないのでfalse
+      if(e && (e.code === "declined" || e.code === "rate_limited")) return false;
+      // それ以外の失敗は従来方式にフォールバック（下へ続行）
+    }
+  }
+  const blob = new Blob([text], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `水分出納バックアップ_${auto===true?"自動_":""}${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`;
+  a.download = fname;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  return true;
 }
 function bkHasData(){
   if(!users.length) return false;
@@ -1097,15 +1132,18 @@ function showAutoBkMsg(){
   el.classList.add("on");
   setTimeout(()=>el.classList.remove("on"), 6000);
 }
-function autoBackupWeekly(){
+async function autoBackupWeekly(){
   try{
     if(!bkHasData()) return;
     const last = localStorage.getItem(BK_AUTO);
     const t = last ? Date.parse(last) : NaN;
     if(!isNaN(t) && Date.now() - t < BK_EVERY_MS) return;
-    exportBackup(true);
-    localStorage.setItem(BK_AUTO, new Date().toISOString());
-    showAutoBkMsg();
+    // 保存が実際に成功した時だけ日時を進めてお知らせを出す（断られたら次に開いた時また誘う）
+    const ok = await exportBackup(true);
+    if(ok){
+      localStorage.setItem(BK_AUTO, new Date().toISOString());
+      showAutoBkMsg();
+    }
   }catch(e){}
 }
 function importBackup(file){
@@ -1131,6 +1169,278 @@ function importBackup(file){
   fr.readAsText(file);
 }
 
+/* ===== クラウドの控え（Claudeの db）=====
+   目的：ホーム画面アイコンの削除・機種変更・容量超過で localStorage が飛んでも記録を戻せるようにする。
+   ⚠ ここは「控え」専用。ふだんの読み書きは今まで通り localStorage だけで完結する。
+      db が無い環境（保存用HTMLを直接開いた・機能が使えない）でも、アプリは1つも機能を落とさない。
+
+   ⚠⚠ 個人情報はクラウドに出さない（介護施設の利用者・職員の名前）。
+      送るのは ①記録の中身（利用者IDがキー。ID "u_xxxxx" に名前は入っていない）
+              ②利用者・職員の ID の並びだけ（人数と順番を戻すため）。
+      記録の「担当者」も、名前ではなく職員ID（s_xxxxx）に置き換えて送る（byId / closeById）。
+      戻す時は、この端末の名簿にIDが残っていれば本名に、無ければ「職員1」等の仮名に復元する。 */
+const CLOUD_PATH  = "backup/latest";      // 1ドキュメントに全部入れる（日ごとに分けない）
+const CLOUD_WAIT  = 4000;                 // 連打で毎回書かないためのデバウンス（ms）
+const CLOUD_MAX   = 240 * 1024;           // dbの上限は1ドキュメント256KiB。余白を取って240KiBで打ち切る
+const CLOUD_DEV   = "sw_cloudid_v1";      // この端末を見分ける印（名前ではないランダムなID）
+
+let cloudDb = null;         // 解決した db。使えない環境では最後まで null
+let cloudState = "checking";// "checking" | "off" | "none" | "ok" | "error"
+let cloudSavedAt = "";      // 控えの最終保存日時（ISO）
+let cloudTimer = null;
+let cloudSaving = false, cloudPending = false;
+
+function cloudDeviceId(){
+  try{
+    let v = localStorage.getItem(CLOUD_DEV);
+    if(!v){ v = uid("d"); localStorage.setItem(CLOUD_DEV, v); }
+    return v;
+  }catch(e){ return ""; }
+}
+function cloudStamp(iso){
+  const t = Date.parse(iso);
+  if(isNaN(t)) return "";
+  const d = new Date(t);
+  return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())+" "+pad2(d.getHours())+":"+pad2(d.getMinutes());
+}
+/* JSONの実バイト数。上限判定は文字数ではなくバイトで見る（日本語は1文字3バイト） */
+function utf8Bytes(s){
+  try{ return new Blob([s]).size; }catch(e){ return String(s).length*3; }
+}
+
+/* ===== 設定タブの表示 ===== */
+function renderCloudUI(){
+  const line = document.getElementById("cloudLine");
+  const btns = document.getElementById("cloudBtns");
+  if(!line || !btns) return;
+  if(!cloudDb){
+    // ⚠ db が使えない時はボタンごと消す（押せるのに動かない、を作らない）
+    btns.style.display = "none";
+    line.textContent = (cloudState === "checking")
+      ? "☁️ クラウドの控え: 確認中…"
+      : "☁️ クラウドの控え: 利用できません（この端末では控えが取れません）";
+    return;
+  }
+  btns.style.display = "";
+  if(cloudState === "error")      line.textContent = "☁️ クラウドの控え: いま確認できませんでした（時間をおいて開き直してください）";
+  else if(cloudSavedAt)           line.textContent = "☁️ クラウドの控え: "+cloudStamp(cloudSavedAt)+" に保存済み";
+  else                            line.textContent = "☁️ クラウドの控え: まだ保存されていません（記録を1つ入れると保存されます）";
+}
+
+/* ===== 送る中身を組み立てる ===== */
+/* 職員名 → 職員ID。名前をクラウドに出さないための変換表 */
+function cloudStaffMap(){
+  const m = {};
+  staff.forEach(s=>{ if(s && typeof s.name === "string" && s.name && !Object.prototype.hasOwnProperty.call(m, s.name)) m[s.name] = s.id; });
+  return m;
+}
+/* 1日ぶんを、名前ぬきの形に詰め替える */
+function cloudPackDay(day, byMap){
+  const out = {};
+  Object.keys(day).forEach(uidStr=>{
+    const r = day[uidStr];
+    if(!r || typeof r !== "object") return;
+    const p = {};
+    const one = (x, kind)=>{
+      const it = {id:String(x.id||""), t:String(x.t||""), ml:Number(x.ml)||0};
+      if(kind === "in" && typeof x.what === "string" && x.what) it.what = x.what;   // 飲み物の名前。人の名前ではない
+      const bid = byMap[x.by];
+      if(bid) it.byId = bid;                       // ⚠ 担当者は名前ではなくIDで送る
+      return it;
+    };
+    if(Array.isArray(r.in)  && r.in.length)  p.in  = r.in.map(x=>one(x,"in"));
+    if(Array.isArray(r.out) && r.out.length) p.out = r.out.map(x=>one(x,"out"));
+    const c = Number(r.close);
+    if(r.close !== undefined && r.close !== null && r.close !== "" && isFinite(c) && c >= 0){
+      p.close = Math.round(c);
+      const bid = byMap[r.closeBy];
+      if(bid) p.closeById = bid;                   // ⚠ ここも名前は送らない
+    }
+    if(p.in || p.out || p.close !== undefined) out[uidStr] = p;
+  });
+  return out;
+}
+/* 控え1件ぶんのJSON。240KiBを超える時は古い日から落とす（新しい日を必ず残す） */
+function cloudPack(){
+  const byMap = cloudStaffMap();
+  const packed = {}, sizes = {};
+  Object.keys(recs).forEach(ds=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)) return;
+    const day = recs[ds];
+    if(!day || typeof day !== "object") return;
+    const p = cloudPackDay(day, byMap);
+    if(Object.keys(p).length === 0) return;        // 中身のない日は送らない
+    packed[ds] = p;
+    sizes[ds] = utf8Bytes(JSON.stringify(p)) + ds.length + 6;
+  });
+  const body = {
+    app: "suibun-suito",
+    v: 1,
+    savedAt: new Date().toISOString(),
+    deviceId: cloudDeviceId(),                     // 別のiPadの控えを取り違えないための印（名前ではない）
+    userIds:  users.map(u=>String(u.id)),          // ⚠ name は絶対に入れない
+    staffIds: staff.map(s=>String(s.id)),          // ⚠ name は絶対に入れない
+    recs: {}
+  };
+  const base = utf8Bytes(JSON.stringify(body)) + 200;
+  const days = Object.keys(packed).sort();
+  let total = base, cut = "";
+  for(let i=days.length-1; i>=0; i--){             // 新しい日から詰める
+    if(total + sizes[days[i]] > CLOUD_MAX){ cut = days[i]; break; }
+    total += sizes[days[i]];
+    body.recs[days[i]] = packed[days[i]];
+  }
+  if(cut) body.keptFrom = shiftDate(cut, 1);       // ⚠ この日より前は容量の都合で控えに入っていない
+  body.days = Object.keys(body.recs).length;
+  return body;
+}
+
+/* ===== 書き込み ===== */
+async function cloudSaveNow(){
+  if(!cloudDb) return;
+  if(cloudSaving){ cloudPending = true; return; }  // 書いている最中に来たら、終わってからもう1回
+  cloudSaving = true;
+  try{
+    const body = cloudPack();
+    await cloudDb.doc(CLOUD_PATH).set(body);
+    cloudSavedAt = body.savedAt;
+    cloudState = "ok";
+  }catch(e){
+    // ⚠ 控えが失敗しても画面の記録は無事（主たる保存先は localStorage）。黙って次の機会にまた試す。
+    if(e && e.code === "revoked"){ cloudDb = null; cloudState = "off"; }
+    else cloudState = "error";
+  }
+  cloudSaving = false;
+  renderCloudUI();
+  if(cloudPending){ cloudPending = false; cloudQueueSave(); }
+}
+function cloudQueueSave(){
+  if(!cloudDb) return;
+  if(cloudTimer) clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(()=>{ cloudTimer = null; cloudSaveNow(); }, CLOUD_WAIT);
+}
+
+/* ===== 読み出して戻す ===== */
+async function cloudRestore(){
+  if(!cloudDb) return;
+  const btn = document.getElementById("btnCloudRestore");
+  btn.disabled = true; btn.textContent = "☁️ 読み込み中…";
+  let d = null, failed = false;
+  try{
+    const snap = await cloudDb.doc(CLOUD_PATH).get();
+    d = (snap && snap.exists) ? snap.data() : null;
+  }catch(e){ failed = true; }
+  btn.disabled = false; btn.textContent = "☁️ クラウドの控えから戻す";
+  if(failed){ alert("クラウドにつながりませんでした。\n時間をおいて、もう一度お試しください。"); return; }
+  if(!d || d.app !== "suibun-suito" || !d.recs || typeof d.recs !== "object"){
+    alert("クラウドに控えが見つかりませんでした。"); return;
+  }
+
+  const ids   = Array.isArray(d.userIds)  ? d.userIds.map(String)  : [];
+  const sids  = Array.isArray(d.staffIds) ? d.staffIds.map(String) : [];
+  const dayList = Object.keys(d.recs).filter(ds=>/^\d{4}-\d{2}-\d{2}$/.test(ds)).sort();
+
+  let msg = "クラウドの控え: "+ids.length+"人分・"+dayList.length+"日分の記録";
+  if(dayList.length) msg += "\n（"+dayList[0]+" 〜 "+dayList[dayList.length-1]+"）";
+  if(d.savedAt) msg += "\n保存日時: "+cloudStamp(d.savedAt);
+  // ⚠ 控えは1つしかない。別のiPadが上書きしていた場合、ここで気づけるようにする。
+  if(d.deviceId && d.deviceId !== cloudDeviceId()) msg += "\n\n⚠ この控えは別の端末で保存されたものです。";
+  msg += "\n\n今のこのiPadの記録に上書きします。よろしいですか？";
+  if(!confirm(msg)) return;
+
+  // 上書き前に今の中身を退避（ファイル読み込みと同じ保険）
+  try{
+    const undo = {};
+    BK_KEYS.forEach(k=>{ const v = localStorage.getItem(k); if(v !== null) undo[k] = v; });
+    localStorage.setItem(BK_UNDO, JSON.stringify({saved:new Date().toISOString(), store:undo}));
+  }catch(e){}
+
+  // 名簿：IDが一致する人は今の名前を残す。控えに名前は入っていないので、残りは仮名。
+  const mkRoster = (idList, cur, label)=>{
+    const made = idList.map((id, i)=>{
+      const hit = cur.find(x=>x.id === id);
+      return {id:id, name: hit ? hit.name : (label+(i+1))};
+    });
+    // 控えに載っていない人（この端末にだけ居る人）は消さずに後ろへ残す
+    cur.forEach(x=>{ if(idList.indexOf(x.id) < 0) made.push({id:x.id, name:x.name}); });
+    return made;
+  };
+  const newUsers = mkRoster(ids,  users, "利用者");
+  const newStaff = mkRoster(sids, staff, "職員");
+
+  // 職員ID → 表示名。上で決めた名前（本名 or 仮名）に戻す
+  const nameOf = {};
+  newStaff.forEach(s=>{ nameOf[s.id] = s.name; });
+
+  const nr = {};
+  dayList.forEach(ds=>{
+    const day = d.recs[ds];
+    if(!day || typeof day !== "object") return;
+    const o = {};
+    Object.keys(day).forEach(uidStr=>{
+      const r = day[uidStr];
+      if(!r || typeof r !== "object") return;
+      const un = {in:[], out:[]};
+      ["in","out"].forEach(k=>{
+        if(!Array.isArray(r[k])) return;
+        un[k] = r[k].map(x=>{
+          const it = {id: String((x && x.id) || uid(k)), t: String((x && x.t) || ""), ml: Number(x && x.ml) || 0,
+                      by: (x && nameOf[x.byId]) || ""};
+          if(k === "in") it.what = (x && typeof x.what === "string") ? x.what : "";
+          return it;
+        });
+      });
+      const c = Number(r.close);
+      if(r.close !== undefined && r.close !== null && r.close !== "" && isFinite(c) && c >= 0){
+        un.close = Math.round(c);
+        un.closeBy = nameOf[r.closeById] || "";
+      }
+      o[uidStr] = un;
+    });
+    nr[ds] = o;
+  });
+
+  users = newUsers; staff = newStaff; recs = nr;
+  saveUsers(); saveStaff(); saveRecs();
+  renderUserSelect(); renderRosters(); renderDay(); updateUsage();
+  const note = document.getElementById("cloudNote");
+  if(note) note.style.display = "";
+  alert("クラウドの控えから戻しました。\n\n"
+      + "※ 名前（利用者・職員）は端末の中だけに保存されているため、控えには入っていません。\n"
+      + "「設定」タブの名簿で、名前を付け直してください。");
+}
+
+/* ===== 起ち上げ =====
+   ⚠ claude.use("db") は最初の同期実行では解決しない（10秒たって null のこともある）。
+      だから画面は db 抜きで先に出しきり、解決してからボタンを後付けで出す。 */
+async function initCloud(){
+  let db = null;
+  try{
+    if(window.claude && typeof window.claude.use === "function") db = await window.claude.use("db");
+  }catch(e){ db = null; }
+  if(!db || typeof db.doc !== "function"){    // 使えない環境（保存用HTMLを直接開いた時など）
+    cloudDb = null; cloudState = "off"; renderCloudUI(); return;
+  }
+  cloudDb = db;                               // ⚠ 解決した名前空間は凍結。中身を書き換えない
+  cloudState = "none";
+  renderCloudUI();
+  const rBtn = document.getElementById("btnCloudRestore");
+  if(rBtn) rBtn.addEventListener("click", cloudRestore);
+  try{
+    const snap = await cloudDb.doc(CLOUD_PATH).get();
+    if(snap && snap.exists){
+      const d = snap.data() || {};
+      cloudSavedAt = (typeof d.savedAt === "string") ? d.savedAt : "";
+      cloudState = cloudSavedAt ? "ok" : "none";
+    }else{
+      // まだ控えが1本も無い時だけ、その場で1本作る（次に記録を入れるまで無防備にしない）
+      cloudState = "none";
+      if(users.length && Object.keys(recs).length) cloudQueueSave();
+    }
+  }catch(e){ cloudState = "error"; }
+  renderCloudUI();
+}
+
 /* ===== 画面の切り替え ===== */
 function showTab(which){
   const rec = which === "rec";
@@ -1142,7 +1452,7 @@ function showTab(which){
 
 /* ===== ボタンの配線 ===== */
 document.getElementById("tabBtnRec").addEventListener("click", ()=>showTab("rec"));
-document.getElementById("tabBtnSet").addEventListener("click", ()=>{ showTab("set"); renderRosters(); updateUsage(); });
+document.getElementById("tabBtnSet").addEventListener("click", ()=>{ showTab("set"); renderRosters(); updateUsage(); renderCloudUI(); });
 
 document.getElementById("selUser").addEventListener("change", renderDay);
 document.getElementById("theDate").addEventListener("change", renderDay);
@@ -1175,17 +1485,7 @@ function bindList(id){
 }
 bindList("listIn"); bindList("listOut");
 
-document.getElementById("mNow").addEventListener("click", ()=>{ setModalTime(nowTime10()); });
-document.getElementById("mHour").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if(!b) return;
-  const t = document.getElementById("mTime").value || nowTime10();
-  setModalTime(b.dataset.v + ":" + t.slice(3,5));
-});
-document.getElementById("mMin").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if(!b) return;
-  const t = document.getElementById("mTime").value || nowTime10();
-  setModalTime(t.slice(0,2) + ":" + b.dataset.v);
-});
+document.getElementById("mNow").addEventListener("click", ()=>{ document.getElementById("mTime").value = nowTime(); });
 document.getElementById("mWhat").addEventListener("click", e=>{
   const b = e.target.closest("button"); if(!b) return;
   mWhatSel = b.dataset.v;
@@ -1347,6 +1647,8 @@ document.getElementById("theDate").value = todayStr();
 renderUserSelect(); renderRosters(); renderDay(); updateUsage();
 applyHomeTip();
 autoBackupWeekly();
+// ⚠ db の用意を待たない。画面はここまでで完成していて、使えると分かった時だけ後から機能が増える。
+initCloud();
 </script>
 </body>
 </html>
